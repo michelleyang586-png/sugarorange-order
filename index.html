@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>砂糖橘訂購</title>
+<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; background: #f5f5f5; color: #333; }
+  .header { background: #06C755; color: white; padding: 20px; text-align: center; }
+  .header h1 { font-size: 20px; font-weight: bold; }
+  .header p { font-size: 13px; margin-top: 4px; opacity: 0.9; }
+  .container { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 15px; color: #06C755; margin-bottom: 14px; font-weight: bold; }
+  .stock-badge { display: inline-block; background: #e8f8ef; color: #06C755; padding: 4px 12px; border-radius: 20px; font-size: 13px; margin-bottom: 16px; }
+  .sold-out { background: #fee; color: #e33; }
+  label { display: block; font-size: 14px; color: #555; margin-bottom: 6px; }
+  input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #06C755; }
+  .field { margin-bottom: 16px; }
+  .delivery-toggle { display: flex; gap: 8px; }
+  .delivery-btn { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; background: white; font-size: 14px; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .delivery-btn.active { border-color: #06C755; background: #e8f8ef; color: #06C755; font-weight: bold; }
+  .qty-control { display: flex; align-items: center; gap: 12px; }
+  .qty-btn { width: 40px; height: 40px; border: 2px solid #06C755; border-radius: 50%; background: white; color: #06C755; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+  .qty-num { font-size: 24px; font-weight: bold; min-width: 40px; text-align: center; }
+  .price-display { background: #f9f9f9; border-radius: 8px; padding: 14px; margin-top: 8px; }
+  .price-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; color: #666; }
+  .price-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #06C755; border-top: 1px solid #eee; padding-top: 10px; margin-top: 4px; }
+  .address-section { display: none; }
+  .payment-info { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; font-size: 13px; color: #666; line-height: 1.6; }
+  .submit-btn { width: 100%; padding: 16px; background: #06C755; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+  .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+  .success-screen { display: none; text-align: center; padding: 40px 20px; }
+  .success-icon { font-size: 60px; margin-bottom: 16px; }
+  .success-title { font-size: 22px; font-weight: bold; color: #06C755; margin-bottom: 8px; }
+  .success-msg { font-size: 14px; color: #666; line-height: 1.6; }
+  .order-id { font-size: 13px; color: #999; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div id="main-screen">
+  <div class="header">
+    <h1>🍊 餘有榮焉｜砂糖橘訂購</h1>
+    <p>季節限定・新鮮直送</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div id="stock-display" class="stock-badge">載入庫存中...</div>
+      <h2>選擇取貨方式</h2>
+      <div class="delivery-toggle">
+        <button class="delivery-btn active" onclick="setDelivery('自取')" id="btn-pickup">🏪 自取</button>
+        <button class="delivery-btn" onclick="setDelivery('宅配')" id="btn-delivery">🚚 宅配（新竹貨運）</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>訂購數量</h2>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-num" id="qty-display">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+        <span style="font-size:14px;color:#999;">箱</span>
+      </div>
+      <div class="price-display">
+        <div class="price-row"><span>單價</span><span id="unit-price">NT$ 0</span></div>
+        <div class="price-row"><span>數量</span><span id="qty-text">1 箱</span></div>
+        <div class="price-total"><span>總金額</span><span id="total-price">NT$ 0</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>聯絡資訊</h2>
+      <div class="field">
+        <label>姓名</label>
+        <input type="text" id="name" placeholder="請輸入姓名">
+      </div>
+      <div class="field">
+        <label>電話</label>
+        <input type="tel" id="phone" placeholder="請輸入手機號碼">
+      </div>
+      <div class="field address-section" id="address-section">
+        <label>收件地址</label>
+        <input type="text" id="address" placeholder="請輸入完整收件地址">
+      </div>
+      <div class="field">
+        <label>備註（選填）</label>
+        <textarea id="note" rows="2" placeholder="如有特殊需求請填寫"></textarea>
+      </div>
+    </div>
+
+    <div class="card" id="payment-card" style="display:none;">
+      <h2>付款方式</h2>
+      <div class="payment-info">
+        宅配需先完成匯款後才會出貨。<br>
+        下單後請將款項匯至：<br><br>
+        銀行：（你的銀行）<br>
+        帳號：（你的帳號）<br>
+        戶名：（你的戶名）<br><br>
+        匯款後請回傳匯款後五碼至 LINE，我們確認後即安排出貨。
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitOrder()">確認送出訂單</button>
+  </div>
+</div>
+
+<div class="success-screen" id="success-screen">
+  <div class="success-icon">🎉</div>
+  <div class="success-title">訂單已送出！</div>
+  <div class="success-msg" id="success-msg"></div>
+  <div class="order-id" id="order-id-display"></div>
+</div>
+
+<script>
+const LIFF_ID = '2009767596-nZiSJohI';
+const GAS_URL = 'https://script.google.com/u/0/home/projects/17G6AfbpnZC-Ze_Y2JxqtfUzIWjrfllXBRvkvSGc7EWc00UIzEpo8m7d5/edit';
+
+let unitPrice = 0;
+let qty = 1;
+let deliveryType = '自取';
+let remaining = 0;
+let lineName = '';
+let lineUserId = '';
+
+async function init() {
+  await liff.init({ liffId: LIFF_ID });
+  if (liff.isLoggedIn()) {
+    const profile = await liff.getProfile();
+    lineName = profile.displayName;
+    lineUserId = profile.userId;
+  } else {
+    liff.login();
+  }
+  loadStock();
+}
+
+async function loadStock() {
+  try {
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
+    unitPrice = data.price;
+    remaining = data.remaining;
+    updatePriceDisplay();
+    const badge = document.getElementById('stock-display');
+    if (remaining <= 0) {
+      badge.textContent = '已售完';
+      badge.className = 'stock-badge sold-out';
+      document.getElementById('submit-btn').disabled = true;
+    } else {
+      badge.textContent = `剩餘庫存：${remaining} 箱`;
+    }
+  } catch(e) {
+    document.getElementById('stock-display').textContent = '庫存載入失敗';
+  }
+}
+
+function setDelivery(type) {
+  deliveryType = type;
+  document.getElementById('btn-pickup').className = 'delivery-btn' + (type === '自取' ? ' active' : '');
+  document.getElementById('btn-delivery').className = 'delivery-btn' + (type === '宅配' ? ' active' : '');
+  document.getElementById('address-section').style.display = type === '宅配' ? 'block' : 'none';
+  document.getElementById('payment-card').style.display = type === '宅配' ? 'block' : 'none';
+}
+
+function changeQty(delta) {
+  qty = Math.max(1, Math.min(remaining, qty + delta));
+  document.getElementById('qty-display').textContent = qty;
+  updatePriceDisplay();
+}
+
+function updatePriceDisplay() {
+  document.getElementById('unit-price').textContent = `NT$ ${unitPrice.toLocaleString()}`;
+  document.getElementById('qty-text').textContent = `${qty} 箱`;
+  document.getElementById('total-price').textContent = `NT$ ${(unitPrice * qty).toLocaleString()}`;
+}
+
+async function submitOrder() {
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const note = document.getElementById('note').value.trim();
+
+  if (!name || !phone) { alert('請填寫姓名和電話'); return; }
+  if (deliveryType === '宅配' && !address) { alert('宅配需填寫收件地址'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送出中...';
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lineName: lineName || name,
+        lineUserId: lineUserId,
+        phone, deliveryType, quantity: qty,
+        amount: unitPrice * qty,
+        address, note
+      })
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      document.getElementById('main-screen').style.display = 'none';
+      document.getElementById('success-screen').style.display = 'block';
+      const msg = deliveryType === '宅配'
+        ? `感謝您的訂購！\n請將 NT$ ${(unitPrice*qty).toLocaleString()} 匯款至指定帳戶，並回傳匯款後五碼，我們確認後即安排新竹貨運出貨。`
+        : `感謝您的訂購！\n取貨時付款 NT$ ${(unitPrice*qty).toLocaleString()}，我們會盡快與您聯繫取貨時間。`;
+      document.getElementById('success-msg').textContent = msg;
+      document.getElementById('order-id-display').textContent = `訂單編號：${result.orderId}`;
+    }
+  } catch(e) {
+    alert('送出失敗，請稍後再試');
+    btn.disabled = false;
+    btn.textContent = '確認送出訂單';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
