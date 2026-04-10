@@ -50,7 +50,6 @@
 
   <div class="container">
     <div class="card">
-      <div id="stock-display" class="stock-badge">載入庫存中...</div>
       <h2>選擇取貨方式</h2>
       <div class="delivery-toggle">
         <button class="delivery-btn active" onclick="setDelivery('自取')" id="btn-pickup">🏪 自取</button>
@@ -146,16 +145,14 @@ async function loadStock() {
     unitPrice = data.price;
     remaining = data.remaining;
     updatePriceDisplay();
-    const badge = document.getElementById('stock-display');
     if (remaining <= 0) {
-      badge.textContent = '已售完';
-      badge.className = 'stock-badge sold-out';
       document.getElementById('submit-btn').disabled = true;
-    } else {
-      badge.textContent = `剩餘庫存：${remaining} 箱`;
+      document.getElementById('submit-btn').textContent = '已售完';
     }
   } catch(e) {
-    document.getElementById('stock-display').textContent = '庫存載入失敗';
+    unitPrice = 400;
+    remaining = 9999;
+    updatePriceDisplay();
   }
 }
 
