@@ -210,20 +210,20 @@ async function submitOrder() {
   btn.textContent = '送出中...';
 
   try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        lineName: lineName || name,
-        lineUserId: lineUserId,
-        phone,
-        deliveryType,
-        quantity: qty,
-        amount: totalAmount,
-        address,
-        note
-      })
+    const params = new URLSearchParams({
+      action: 'order',
+      lineName: lineName || name,
+      lineUserId: lineUserId,
+      phone: phone,
+      deliveryType: deliveryType,
+      quantity: qty,
+      amount: totalAmount,
+      address: address || '自取',
+      note: note || ''
     });
+
+    const res = await fetch(GAS_URL + '?' + params.toString());
+   
     const result = await res.json();
     if (result.status === 'success') {
       document.getElementById('main-screen').style.display = 'none';
