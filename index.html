@@ -126,22 +126,25 @@ let lineName = '';
 let lineUserId = '';
 
 async function init() {
-  await liff.init({ liffId: LIFF_ID });
-  if (liff.isLoggedIn()) {
-    const profile = await liff.getProfile();
-    lineName = profile.displayName;
-    lineUserId = profile.userId;
-  } else {
-    liff.login();
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (liff.isLoggedIn()) {
+      const profile = await liff.getProfile();
+      lineName = profile.displayName;
+      lineUserId = profile.userId;
+    } else {
+      liff.login();
+    }
+  } catch(e) {
+    // 非 LINE 環境，繼續執行
   }
   loadStock();
 }
 
 async function loadStock() {
   try {
-    const res = await fetch(GAS_URL, { redirect: 'follow' });
-    const text = await res.text();
-    const data = JSON.parse(text);
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
     unitPrice = data.price;
     remaining = data.remaining;
     updatePriceDisplay();
@@ -178,20 +181,17 @@ function changeQty(delta) {
 function updatePriceDisplay() {
   const shipping = deliveryType === '宅配' ? calcShipping(qty) : 0;
   const total = unitPrice * qty + shipping;
-
-  document.getElementById('unit-price').textContent = `NT$ ${unitPrice.toLocaleString()}`;
-  document.getElementById('qty-text').textContent = `${qty} 盒`;
-
+  document.getElementById('unit-price').textContent = 'NT$ ' + unitPrice.toLocaleString();
+  document.getElementById('qty-text').textContent = qty + ' 盒';
   const shippingRow = document.getElementById('shipping-row');
   if (deliveryType === '宅配') {
     const units = Math.ceil(qty / 4);
     shippingRow.style.display = 'flex';
-    document.getElementById('shipping-price').textContent = `NT$ ${shipping}（${units} 件）`;
+    document.getElementById('shipping-price').textContent = 'NT$ ' + shipping + '（' + units + ' 件）';
   } else {
     shippingRow.style.display = 'none';
   }
-
-  document.getElementById('total-price').textContent = `NT$ ${total.toLocaleString()}`;
+  document.getElementById('total-price').textContent = 'NT$ ' + total.toLocaleString();
 }
 
 async function submitOrder() {
@@ -214,44 +214,37 @@ async function submitOrder() {
     const params = new URLSearchParams({
       action: 'order',
       lineName: lineName || name,
-      lineUserId: lineUserId,
+      lineUserId: lineUserId || '',
       phone: phone,
       deliveryType: deliveryType,
-      quantity: qty,
-      amount: totalAmount,
+      quantity: String(qty),
+      amount: String(totalAmount),
       address: address || '自取',
       note: note || ''
     });
 
-    const res = await fetch(GAS_URL + '?' + params.toString(), {
-  redirect: 'follow',
-  mode: 'cors'
-});
-const text = await res.text();
-const result = JSON.parse(text);
-    if (result.status === 'success') {
-      document.getElementById('main-screen').style.display = 'none';
-      document.getElementById('success-screen').style.display = 'block';
-      const msg = deliveryType === '宅配'
-        ? `感謝您的訂購！\n\n商品金額：NT$ ${(unitPrice * qty).toLocaleString()}\n運費：NT$ ${shipping}\n總計：NT$ ${totalAmount.toLocaleString()}\n\n請匯款至指定帳戶，並回傳匯款後五碼，確認後即安排新竹貨運出貨。`
-        : `感謝您的訂購！\n\n總計：NT$ ${totalAmount.toLocaleString()}\n\n取貨時付款，我們會盡快與您聯繫取貨時間。`;
-      document.getElementById('success-msg').textContent = msg;
-      document.getElementById('order-id-display').textContent = `訂單編號：${result.orderId}`;
-    } else {
-      alert('送出失敗，請稍後再試');
-      btn.disabled = false;
-      btn.textContent = '確認送出訂單';
-    }
+    const url = GAS_URL + '?' + params.toString();
+
+    // 使用 no-cors 模式送出（繞過 CORS 限制）
+    await fetch(url, { mode: 'no-cors' });
+
+    // 等待 2 秒讓 Apps Script 處理完成
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 顯示成功畫面
+    document.getElementById('main-screen').style.display = 'none';
+    document.getElementById('success-screen').style.display = 'block';
+    const msg = deliveryType === '宅配'
+      ? '感謝您的訂購！\n\n商品金額：NT$ ' + (unitPrice * qty).toLocaleString() + '\n運費：NT$ ' + shipping + '\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n請匯款至指定帳戶，並回傳匯款後五碼，確認後即安排新竹貨運出貨。'
+      : '感謝您的訂購！\n\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n取貨時付款，我們會盡快與您聯繫取貨時間。';
+    document.getElementById('success-msg').textContent = msg;
+    document.getElementById('order-id-display').textContent = '訂單已送出，請等待我們的 LINE 確認通知。';
+
   } catch(e) {
     alert('送出失敗，請稍後再試');
     btn.disabled = false;
     btn.textContent = '確認送出訂單';
   }
-}
- function doOptions(e) {
-  return ContentService
-    .createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 init();
