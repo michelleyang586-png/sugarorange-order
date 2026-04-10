@@ -244,6 +244,11 @@ async function submitOrder() {
     btn.textContent = '確認送出訂單';
   }
 }
+ function doOptions(e) {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
 
 init();
 </script>
