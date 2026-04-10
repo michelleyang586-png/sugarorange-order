@@ -63,13 +63,14 @@
         <button class="qty-btn" onclick="changeQty(-1)">−</button>
         <span class="qty-num" id="qty-display">1</span>
         <button class="qty-btn" onclick="changeQty(1)">+</button>
-        <span style="font-size:14px;color:#999;">箱</span>
+        <span style="font-size:14px;color:#999;">盒</span>
       </div>
       <div class="price-display">
-        <div class="price-row"><span>單價</span><span id="unit-price">NT$ 0</span></div>
-        <div class="price-row"><span>數量</span><span id="qty-text">1 箱</span></div>
-        <div class="price-total"><span>總金額</span><span id="total-price">NT$ 0</span></div>
-      </div>
+  <div class="price-row"><span>單價</span><span id="unit-price">NT$ 0</span></div>
+  <div class="price-row"><span>數量</span><span id="qty-text">1 盒</span></div>
+  <div class="price-row" id="shipping-row" style="display:none;"><span>運費</span><span id="shipping-price">NT$ 0</span></div>
+  <div class="price-total"><span>總金額</span><span id="total-price">NT$ 0</span></div>
+</div>
     </div>
 
     <div class="card">
@@ -171,9 +172,27 @@ function changeQty(delta) {
 }
 
 function updatePriceDisplay() {
+  let shipping = 0;
+  if (deliveryType === '宅配') {
+    const units = Math.ceil(qty / 4);
+    shipping = units * 150;
+  }
+  const subtotal = unitPrice * qty;
+  const total = subtotal + shipping;
+
   document.getElementById('unit-price').textContent = `NT$ ${unitPrice.toLocaleString()}`;
-  document.getElementById('qty-text').textContent = `${qty} 箱`;
-  document.getElementById('total-price').textContent = `NT$ ${(unitPrice * qty).toLocaleString()}`;
+  document.getElementById('qty-text').textContent = `${qty} 盒`;
+
+  const shippingRow = document.getElementById('shipping-row');
+  if (deliveryType === '宅配') {
+    shippingRow.style.display = 'flex';
+    const units = Math.ceil(qty / 4);
+    document.getElementById('shipping-price').textContent = `NT$ ${shipping}（${units} 件）`;
+  } else {
+    shippingRow.style.display = 'none';
+  }
+
+  document.getElementById('total-price').textContent = `NT$ ${total.toLocaleString()}`;
 }
 
 async function submitOrder() {
@@ -205,9 +224,11 @@ async function submitOrder() {
     if (result.status === 'success') {
       document.getElementById('main-screen').style.display = 'none';
       document.getElementById('success-screen').style.display = 'block';
-      const msg = deliveryType === '宅配'
-        ? `感謝您的訂購！\n請將 NT$ ${(unitPrice*qty).toLocaleString()} 匯款至指定帳戶，並回傳匯款後五碼，我們確認後即安排新竹貨運出貨。`
-        : `感謝您的訂購！\n取貨時付款 NT$ ${(unitPrice*qty).toLocaleString()}，我們會盡快與您聯繫取貨時間。`;
+      const shipping = deliveryType === '宅配' ? Math.ceil(qty / 4) * 150 : 0;
+const totalAmount = unitPrice * qty + shipping;
+const msg = deliveryType === '宅配'
+  ? `感謝您的訂購！\n請將 NT$ ${totalAmount.toLocaleString()} 匯款至指定帳戶，並回傳匯款後五碼，我們確認後即安排新竹貨運出貨。`
+  : `感謝您的訂購！\n取貨時付款 NT$ ${totalAmount.toLocaleString()}，我們會盡快與您聯繫取貨時間。`;
       document.getElementById('success-msg').textContent = msg;
       document.getElementById('order-id-display').textContent = `訂單編號：${result.orderId}`;
     }
