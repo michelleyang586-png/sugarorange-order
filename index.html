@@ -224,20 +224,20 @@ async function submitOrder() {
 
     const url = GAS_URL + '?' + params.toString();
 
-    // 使用 no-cors 模式送出（繞過 CORS 限制）
-    await fetch(url, { mode: 'no-cors' });
+    const res = await fetch(url);
+const result = await res.json();
 
-    // 等待 2 秒讓 Apps Script 處理完成
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // 顯示成功畫面
-    document.getElementById('main-screen').style.display = 'none';
-    document.getElementById('success-screen').style.display = 'block';
-    const msg = deliveryType === '宅配'
-      ? '感謝您的訂購！\n\n商品金額：NT$ ' + (unitPrice * qty).toLocaleString() + '\n運費：NT$ ' + shipping + '\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n請匯款至指定帳戶，並回傳匯款後五碼，確認後即安排新竹貨運出貨。'
-      : '感謝您的訂購！\n\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n取貨時付款，我們會盡快與您聯繫取貨時間。';
-    document.getElementById('success-msg').textContent = msg;
-    document.getElementById('order-id-display').textContent = '訂單已送出，請等待我們的 LINE 確認通知。';
+if (result.status === 'success') {
+  document.getElementById('main-screen').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  const msg = deliveryType === '宅配'
+    ? '感謝您的訂購！\n\n商品金額：NT$ ' + (unitPrice * qty).toLocaleString() + '\n運費：NT$ ' + shipping + '\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n請匯款至指定帳戶，並回傳匯款後五碼，確認後即安排新竹貨運出貨。'
+    : '感謝您的訂購！\n\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n取貨時付款，我們會盡快與您聯繫取貨時間。';
+  document.getElementById('success-msg').textContent = msg;
+  document.getElementById('order-id-display').textContent = '訂單編號：' + result.orderId;
+} else {
+  throw new Error('訂單送出失敗');
+}
 
   } catch(e) {
     alert('送出失敗，請稍後再試');
