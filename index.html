@@ -1,252 +1,155 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>砂糖橘訂購</title>
-<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, sans-serif; background: #f5f5f5; color: #333; }
-  .header { background: #06C755; color: white; padding: 20px; text-align: center; }
-  .header h1 { font-size: 20px; font-weight: bold; }
-  .header p { font-size: 13px; margin-top: 4px; opacity: 0.9; }
-  .container { padding: 16px; max-width: 480px; margin: 0 auto; }
-  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-  .card h2 { font-size: 15px; color: #06C755; margin-bottom: 14px; font-weight: bold; }
-  label { display: block; font-size: 14px; color: #555; margin-bottom: 6px; }
-  input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; }
-  input:focus, select:focus, textarea:focus { border-color: #06C755; }
-  .field { margin-bottom: 16px; }
-  .delivery-toggle { display: flex; gap: 8px; }
-  .delivery-btn { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; background: white; font-size: 14px; cursor: pointer; text-align: center; transition: all 0.2s; }
-  .delivery-btn.active { border-color: #06C755; background: #e8f8ef; color: #06C755; font-weight: bold; }
-  .qty-control { display: flex; align-items: center; gap: 12px; }
-  .qty-btn { width: 40px; height: 40px; border: 2px solid #06C755; border-radius: 50%; background: white; color: #06C755; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-  .qty-num { font-size: 24px; font-weight: bold; min-width: 40px; text-align: center; }
-  .price-display { background: #f9f9f9; border-radius: 8px; padding: 14px; margin-top: 8px; }
-  .price-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; color: #666; }
-  .price-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #06C755; border-top: 1px solid #eee; padding-top: 10px; margin-top: 4px; }
-  .address-section { display: none; }
-  .payment-info { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; font-size: 13px; color: #666; line-height: 1.6; }
-  .submit-btn { width: 100%; padding: 16px; background: #06C755; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 8px; }
-  .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
-  .success-screen { display: none; text-align: center; padding: 40px 20px; }
-  .success-icon { font-size: 60px; margin-bottom: 16px; }
-  .success-title { font-size: 22px; font-weight: bold; color: #06C755; margin-bottom: 8px; }
-  .success-msg { font-size: 14px; color: #666; line-height: 1.6; white-space: pre-line; }
-  .order-id { font-size: 13px; color: #999; margin-top: 12px; }
-</style>
-</head>
-<body>
+const LINE_TOKEN = '2pgUy78YYeH/bf+gL4MyCWxiQYA2XtFUPzWwIigkRj3/JBHy5Ee6Z92uOBkTYgo9kZYp5mBCfLybgd9VVLLb7hTPqb9VE2Q2d1lYMVPV3euPtDKYEuinsN0LcuxXCtpm9MIS9dLqvVphxhCTETYZmAdB04t89/1O/w1cDnyilFU=';
+const ADMIN_USER_ID = 'Uf86482255e83a7bcd1b70e70a50aef76';
+const SPREADSHEET_ID = '1mou2lH78WpiCaFouirBw57E3foZN-UYrQy1z05tF1o0';
 
-<div id="main-screen">
-  <div class="header">
-    <h1>🍊 餘有榮焉｜砂糖橘訂購</h1>
-    <p>季節限定・新鮮直送</p>
-  </div>
+async function getAccessToken() {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const rawKey = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
 
-  <div class="container">
-    <div class="card">
-      <h2>選擇取貨方式</h2>
-      <div class="delivery-toggle">
-        <button class="delivery-btn active" onclick="setDelivery('自取')" id="btn-pickup">🏪 自取</button>
-        <button class="delivery-btn" onclick="setDelivery('宅配')" id="btn-delivery">🚚 宅配（新竹貨運）</button>
-      </div>
-    </div>
+  const { createSign } = await import('crypto');
 
-    <div class="card">
-      <h2>訂購數量</h2>
-      <div class="qty-control">
-        <button class="qty-btn" onclick="changeQty(-1)">−</button>
-        <span class="qty-num" id="qty-display">1</span>
-        <button class="qty-btn" onclick="changeQty(1)">+</button>
-        <span style="font-size:14px;color:#999;">盒（每盒5斤）</span>
-      </div>
-      <div class="price-display">
-        <div class="price-row"><span>單價</span><span id="unit-price">NT$ 400</span></div>
-        <div class="price-row"><span>數量</span><span id="qty-text">1 盒</span></div>
-        <div class="price-row" id="shipping-row" style="display:none;"><span>運費</span><span id="shipping-price">NT$ 0</span></div>
-        <div class="price-total"><span>總金額</span><span id="total-price">NT$ 400</span></div>
-      </div>
-    </div>
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const claim = Buffer.from(JSON.stringify({
+    iss: email,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  })).toString('base64url');
 
-    <div class="card">
-      <h2>聯絡資訊</h2>
-      <div class="field">
-        <label>姓名</label>
-        <input type="text" id="name" placeholder="請輸入姓名">
-      </div>
-      <div class="field">
-        <label>電話</label>
-        <input type="tel" id="phone" placeholder="請輸入手機號碼">
-      </div>
-      <div class="field address-section" id="address-section">
-        <label>收件地址</label>
-        <input type="text" id="address" placeholder="請輸入完整收件地址">
-      </div>
-      <div class="field">
-        <label>備註（選填）</label>
-        <textarea id="note" rows="2" placeholder="如有特殊需求請填寫"></textarea>
-      </div>
-    </div>
+  const sign = createSign('RSA-SHA256');
+  sign.update(`${header}.${claim}`);
+  const signature = sign.sign(rawKey, 'base64url');
+  const jwt = `${header}.${claim}.${signature}`;
 
-    <div class="card" id="payment-card" style="display:none;">
-      <h2>付款方式</h2>
-      <div class="payment-info">
-        宅配需先完成匯款後才會出貨。<br>
-        下單後請將款項匯至：<br><br>
-        銀行：（你的銀行）<br>
-        帳號：（你的帳號）<br>
-        戶名：（你的戶名）<br><br>
-        匯款後請回傳匯款後五碼至 LINE，我們確認後即安排出貨。
-      </div>
-    </div>
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error('取得 token 失敗：' + JSON.stringify(data));
+  return data.access_token;
+}
 
-    <button class="submit-btn" id="submit-btn" onclick="submitOrder()">確認送出訂單</button>
-  </div>
-</div>
+async function readRange(token, range) {
+  const encodedRange = encodeURIComponent(range);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  if (!data.values) throw new Error('讀取試算表失敗：' + JSON.stringify(data));
+  return data.values;
+}
 
-<div class="success-screen" id="success-screen">
-  <div class="success-icon">🎉</div>
-  <div class="success-title">訂單已送出！</div>
-  <div class="success-msg" id="success-msg"></div>
-  <div class="order-id" id="order-id-display"></div>
-</div>
+async function writeRange(token, range, values) {
+  const encodedRange = encodeURIComponent(range);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}?valueInputOption=USER_ENTERED`;
+  await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ values })
+  });
+}
 
-<script>
-const LIFF_ID = '2009767596-nZiSJohI';
-const GAS_URL = 'https://sugarorange-api.vercel.app/api/order';
-let unitPrice = 400;
-let qty = 1;
-let deliveryType = '自取';
-let remaining = 9999;
-let lineName = '';
-let lineUserId = '';
+async function appendRow(token, range, values) {
+  const encodedRange = encodeURIComponent(range);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}:append?valueInputOption=USER_ENTERED`;
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ values })
+  });
+}
 
-async function init() {
+async function sendLine(message) {
+  await fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    body: JSON.stringify({
+      to: ADMIN_USER_ID,
+      messages: [{ type: 'text', text: message }]
+    })
+  });
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   try {
-    await liff.init({ liffId: LIFF_ID });
-    if (liff.isLoggedIn()) {
-      const profile = await liff.getProfile();
-      lineName = profile.displayName;
-      lineUserId = profile.userId;
+    const token = await getAccessToken();
+    const action = req.query.action;
+
+    if (action === 'order') {
+      const { lineName, phone, deliveryType, quantity, amount, address, note, lineUserId } = req.query;
+      const qty = parseInt(quantity);
+      const amt = parseInt(amount);
+      const orderId = 'ORD-' + Date.now();
+      const timestamp = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+
+      // 寫入訂單
+      await appendRow(token, '訂單總表!A:K', [[
+        orderId, timestamp, lineName, phone, deliveryType,
+        qty, amt, address || '自取', note || '',
+        deliveryType === '宅配' ? '待匯款' : '貨到付款',
+        '待出貨'
+      ]]);
+
+      // 讀取庫存
+      const stockValues = await readRange(token, '庫存控制!B2:E2');
+      const row = stockValues[0];
+      const total = Number(row[1]);
+      const sold = Number(row[2]);
+      const newSold = sold + qty;
+      const newRemaining = total - newSold;
+
+      // 更新庫存
+      await writeRange(token, '庫存控制!D2:E2', [[newSold, newRemaining]]);
+
+      // 傳 LINE 通知
+      const shipping = deliveryType === '宅配' ? Math.ceil(qty / 4) * 150 : 0;
+      const productAmount = amt - shipping;
+      const emoji = deliveryType === '宅配' ? '🚚' : '🏪';
+      const msg = '📦 新訂單！\n' +
+        '訂單編號：' + orderId + '\n' +
+        '姓名：' + lineName + '\n' +
+        '電話：' + phone + '\n' +
+        '取貨方式：' + emoji + ' ' + deliveryType + '\n' +
+        '數量：' + qty + ' 盒\n' +
+        '商品金額：NT$ ' + productAmount + '\n' +
+        (deliveryType === '宅配' ? '運費：NT$ ' + shipping + '\n' : '') +
+        '總金額：NT$ ' + amt + '\n' +
+        (deliveryType === '宅配' ? '地址：' + address + '\n' : '') +
+        (note ? '備註：' + note + '\n' : '') +
+        '付款：' + (deliveryType === '宅配' ? '⏳ 等待匯款' : '貨到付款');
+
+      await sendLine(msg);
+      return res.json({ status: 'success', orderId });
+
     } else {
-      liff.login();
+      // 讀取庫存
+      const stockValues = await readRange(token, '庫存控制!B2:E2');
+      const row = stockValues[0];
+      const price = Number(row[0]);
+      const remaining = Number(row[3]);
+      return res.json({ price, remaining });
     }
-  } catch(e) {
-    // 非 LINE 環境，繼續執行
-  }
-  loadStock();
-}
 
-async function loadStock() {
-  try {
-    const res = await fetch(GAS_URL);
-    const data = await res.json();
-    unitPrice = data.price;
-    remaining = data.remaining;
-    updatePriceDisplay();
-    if (remaining <= 0) {
-      document.getElementById('submit-btn').disabled = true;
-      document.getElementById('submit-btn').textContent = '已售完';
-    }
-  } catch(e) {
-    unitPrice = 400;
-    remaining = 9999;
-    updatePriceDisplay();
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
   }
 }
-
-function calcShipping(q) {
-  return Math.ceil(q / 4) * 150;
-}
-
-function setDelivery(type) {
-  deliveryType = type;
-  document.getElementById('btn-pickup').className = 'delivery-btn' + (type === '自取' ? ' active' : '');
-  document.getElementById('btn-delivery').className = 'delivery-btn' + (type === '宅配' ? ' active' : '');
-  document.getElementById('address-section').style.display = type === '宅配' ? 'block' : 'none';
-  document.getElementById('payment-card').style.display = type === '宅配' ? 'block' : 'none';
-  updatePriceDisplay();
-}
-
-function changeQty(delta) {
-  qty = Math.max(1, Math.min(remaining, qty + delta));
-  document.getElementById('qty-display').textContent = qty;
-  updatePriceDisplay();
-}
-
-function updatePriceDisplay() {
-  const shipping = deliveryType === '宅配' ? calcShipping(qty) : 0;
-  const total = unitPrice * qty + shipping;
-  document.getElementById('unit-price').textContent = 'NT$ ' + unitPrice.toLocaleString();
-  document.getElementById('qty-text').textContent = qty + ' 盒';
-  const shippingRow = document.getElementById('shipping-row');
-  if (deliveryType === '宅配') {
-    const units = Math.ceil(qty / 4);
-    shippingRow.style.display = 'flex';
-    document.getElementById('shipping-price').textContent = 'NT$ ' + shipping + '（' + units + ' 件）';
-  } else {
-    shippingRow.style.display = 'none';
-  }
-  document.getElementById('total-price').textContent = 'NT$ ' + total.toLocaleString();
-}
-
-async function submitOrder() {
-  const name = document.getElementById('name').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  const address = document.getElementById('address').value.trim();
-  const note = document.getElementById('note').value.trim();
-
-  if (!name || !phone) { alert('請填寫姓名和電話'); return; }
-  if (deliveryType === '宅配' && !address) { alert('宅配需填寫收件地址'); return; }
-
-  const shipping = deliveryType === '宅配' ? calcShipping(qty) : 0;
-  const totalAmount = unitPrice * qty + shipping;
-
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.textContent = '送出中...';
-
-  try {
-    const params = new URLSearchParams({
-      action: 'order',
-      lineName: lineName || name,
-      lineUserId: lineUserId || '',
-      phone: phone,
-      deliveryType: deliveryType,
-      quantity: String(qty),
-      amount: String(totalAmount),
-      address: address || '自取',
-      note: note || ''
-    });
-
-    const url = GAS_URL + '?' + params.toString();
-
-    const res = await fetch(url);
-const result = await res.json();
-
-if (result.status === 'success') {
-  document.getElementById('main-screen').style.display = 'none';
-  document.getElementById('success-screen').style.display = 'block';
-  const msg = deliveryType === '宅配'
-    ? '感謝您的訂購！\n\n商品金額：NT$ ' + (unitPrice * qty).toLocaleString() + '\n運費：NT$ ' + shipping + '\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n請匯款至指定帳戶，並回傳匯款後五碼，確認後即安排新竹貨運出貨。'
-    : '感謝您的訂購！\n\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n取貨時付款，我們會盡快與您聯繫取貨時間。';
-  document.getElementById('success-msg').textContent = msg;
-  document.getElementById('order-id-display').textContent = '訂單編號：' + result.orderId;
-} else {
-  throw new Error('訂單送出失敗');
-}
-
-  } catch(e) {
-    alert('送出失敗，請稍後再試');
-    btn.disabled = false;
-    btn.textContent = '確認送出訂單';
-  }
-}
-
-init();
-</script>
-</body>
-</html>
