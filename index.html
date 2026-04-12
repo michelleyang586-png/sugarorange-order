@@ -212,16 +212,17 @@ async function submitOrder() {
 
   try {
     const params = new URLSearchParams({
-      action: 'order',
-      lineName: lineName || name,
-      lineUserId: lineUserId || '',
-      phone: phone,
-      deliveryType: deliveryType,
-      quantity: String(qty),
-      amount: String(totalAmount),
-      address: address || '自取',
-      note: note || ''
-    });
+     action: 'order',
+     lineName: lineName || name,
+     recipientName: name,
+     lineUserId: lineUserId || '',
+     phone: phone,
+     deliveryType: deliveryType,
+     quantity: String(qty),
+     amount: String(totalAmount),
+     address: address || '自取',
+     note: note || ''
+});
 
     const url = GAS_URL + '?' + params.toString();
     const res = await fetch(url);
@@ -231,8 +232,8 @@ async function submitOrder() {
       document.getElementById('main-screen').style.display = 'none';
       document.getElementById('success-screen').style.display = 'block';
       const msg = deliveryType === '宅配'
-        ? '感謝您的訂購！\n\n商品金額：NT$ ' + (unitPrice * qty).toLocaleString() + '\n運費：NT$ ' + shipping + '\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n請匯款至指定帳戶，並回傳匯款後五碼，確認後即安排新竹貨運出貨。'
-        : '感謝您的訂購！\n\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n取貨時付款，我們會盡快與您聯繫取貨時間。';
+        ? '感謝您的訂購！\n\n收件人：' + name + '\n商品金額：NT$ ' + (unitPrice * qty).toLocaleString() + '\n運費：NT$ ' + shipping + '\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n請匯款至指定帳戶，並回傳匯款後五碼，確認後即安排新竹貨運出貨。'
+        : '感謝您的訂購！\n\n收件人：' + name + '\n總計：NT$ ' + totalAmount.toLocaleString() + '\n\n取貨時付款，我們會盡快與您聯繫取貨時間。';
       document.getElementById('success-msg').textContent = msg;
       document.getElementById('order-id-display').textContent = '訂單編號：' + result.orderId;
     } else {
