@@ -430,20 +430,40 @@
     btn.textContent = '訂單處理中...';
 
     try {
-      var params = new URLSearchParams({
-        action: 'order',
-        lineName: lineName || name,
-        recipientName: name,
-        lineUserId: lineUserId || '',
-        phone: phone,
-        deliveryType: deliveryType,
-        spec0: String(qtys[0]),
-        specSummary: specSummary,
-        amount: String(totalAmount),
-        address: address || '自取（' + PICKUP_ADDRESS + '）',
-        note: note || ''
-      });
-      var res    = await fetch(API_URL + '?' + params.toString());
+      
+var payload = {
+  action: 'createOrder',
+  buyerName: name,
+  buyerPhone: phone,
+  note: note || '',
+  deliveries: [{
+    type: deliveryType,
+    name: name,
+    phone: phone,
+    address: deliveryType === '宅配' ? address : '',
+    qty: totalBoxes,
+    note: note || ''
+  }]
+};
+
+
+var lineAccessToken = '';
+if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+  lineAccessToken = liff.getAccessToken() || '';
+}
+if (!lineAccessToken) {
+  throw new Error('無法取得 LINE 登入憑證，請從 LINE 開啟訂購頁面');
+}      
+      
+var res = await fetch(API_URL, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + lineAccessToken
+  },
+  body: JSON.stringify(payload)
+});
+
       var result = await res.json();
       if (result.status === 'success') {
         showSuccessScreen(result.orderId, name, specSummary, totalAmount, shipping, address, note);
