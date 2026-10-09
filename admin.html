@@ -1,0 +1,743 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>餘有榮焉｜訂單管理</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #f7f5f0;
+  color: #38332e;
+  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+header {
+  background: #d97836;
+  color: white;
+  padding: 20px 16px;
+  text-align: center;
+}
+header h1 { margin: 0; font-size: 23px; }
+header p { margin: 7px 0 0; font-size: 13px; }
+main { max-width: 800px; margin: auto; padding: 14px; }
+nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  margin-bottom: 16px;
+}
+button {
+  border: 0;
+  border-radius: 9px;
+  padding: 11px;
+  font: inherit;
+  cursor: pointer;
+}
+nav button { background: #eee6db; }
+nav button.active { background: #d97836; color: white; }
+.primary { background: #d97836; color: white; }
+.secondary { background: #eee6db; }
+.danger { background: #fff0eb; color: #a33c25; }
+.card {
+  background: white;
+  border-radius: 13px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px #00000009;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.summary { text-align: center; }
+.summary strong { display: block; font-size: 25px; color: #d97836; }
+.summary span { font-size: 13px; color: #777; }
+label { display: block; margin: 12px 0 5px; font-size: 14px; }
+input, select, textarea {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font: inherit;
+  background: white;
+}
+textarea { min-height: 65px; }
+h2 { font-size: 19px; }
+h3 { margin: 0 0 10px; font-size: 17px; }
+p { line-height: 1.6; }
+.muted { color: #777; font-size: 13px; }
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions button { flex: 1; }
+.pill {
+  display: inline-block;
+  background: #f8eadc;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.hide { display: none; }
+.notice {
+  background: #fff3df;
+  border-radius: 9px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.delivery {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.total { font-size: 22px; color: #c8692c; font-weight: bold; }
+@media print {
+  header, nav, button, .notice, .no-print { display: none !important; }
+  body { background: white; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>🍊 餘有榮焉</h1>
+  <p>今天的陽光，成就今天的甜。</p>
+</header>
+
+<main>
+  <div class="notice">
+    目前為測試預覽版：不需 LINE 登入，資料只保存在這台瀏覽器，
+    不會寫入正式 Google 試算表。
+  </div>
+
+  <div class="grid">
+    <div class="card summary">
+      <strong id="orderCount">0</strong>
+      <span>訂單數</span>
+    </div>
+    <div class="card summary">
+      <strong id="boxCount">0</strong>
+      <span>訂購盒數</span>
+    </div>
+    <div class="card summary">
+      <strong id="unpaidCount">0</strong>
+      <span>待收款配送</span>
+    </div>
+    <div class="card summary">
+      <strong id="pendingCount">0</strong>
+      <span>待出貨配送</span>
+    </div>
+  </div>
+
+  <nav>
+    <button class="active" data-page="orders">訂單</button>
+    <button data-page="payments">收款</button>
+    <button data-page="shipping">出貨</button>
+    <button data-page="create">＋新增</button>
+  </nav>
+
+  <section id="orders">
+    <h2>訂單管理</h2>
+    <input id="search" placeholder="搜尋姓名、電話、訂單編號">
+    <div id="orderList"></div>
+  </section>
+
+  <section id="payments" class="hide">
+    <h2>收款管理</h2>
+    <div id="paymentList"></div>
+  </section>
+
+  <section id="shipping" class="hide">
+    <div class="row">
+      <h2>出貨管理</h2>
+      <button class="secondary" onclick="window.print()">列印</button>
+    </div>
+    <div id="shippingList"></div>
+  </section>
+
+  <section id="create" class="hide">
+    <h2>新增電話／口頭訂單</h2>
+    <div class="card">
+      <label>訂購人姓名</label>
+      <input id="buyerName" placeholder="請輸入姓名">
+
+      <label>訂購人電話</label>
+      <input id="buyerPhone" type="tel" placeholder="09xxxxxxxx">
+
+      <label>訂單備註</label>
+      <textarea id="orderNote"></textarea>
+
+      <div id="deliveryForms"></div>
+
+      <button class="secondary" onclick="addDelivery()">
+        ＋ 新增宅配地址／自取
+      </button>
+
+      <p class="muted">
+        砂糖橘每盒 NT$400；宅配每 4 盒一件，每件 NT$150。
+        不同宅配地址分開計算運費。
+      </p>
+
+      <p class="total" id="estimate">NT$0</p>
+
+      <button class="primary" style="width:100%" onclick="createOrder()">
+        建立測試訂單
+      </button>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+// 此版本為獨立預覽版，不連接正式後端。
+const PRICE = 400;
+const BOXES_PER_PIECE = 4;
+const SHIPPING_FEE = 150;
+const STORAGE_KEY = "youyu_admin_demo_v1";
+
+const $ = id => document.getElementById(id);
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function money(value) {
+  return "NT$" + Number(value || 0).toLocaleString("zh-TW");
+}
+
+function today() {
+  return new Date().toLocaleDateString("sv-SE", {
+    timeZone: "Asia/Taipei"
+  });
+}
+
+function makeId() {
+  return "SO-" + Date.now() + "-" +
+    Math.random().toString(36).slice(2, 7).toUpperCase();
+}
+
+function demoData() {
+  return [
+    {
+      id: "DEMO-001",
+      buyer: "測試客戶 A",
+      phone: "0900000000",
+      note: "測試資料",
+      deliveries: [
+        {
+          id: "D-001",
+          type: "宅配",
+          name: "測試收件人",
+          phone: "0900000000",
+          address: "測試地址（非真實地址）",
+          qty: 3,
+          shipping: 150,
+          paid: false,
+          shipped: false,
+          shipDate: "",
+          note: ""
+        }
+      ]
+    },
+    {
+      id: "DEMO-002",
+      buyer: "測試客戶 B",
+      phone: "0911111111",
+      note: "",
+      deliveries: [
+        {
+          id: "D-002",
+          type: "自取",
+          name: "測試客戶 B",
+          phone: "0911111111",
+          address: "",
+          qty: 2,
+          shipping: 0,
+          paid: true,
+          shipped: false,
+          shipDate: today(),
+          note: ""
+        }
+      ]
+    }
+  ];
+}
+
+function loadOrders() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (error) {
+    console.warn("讀取測試資料失敗", error);
+  }
+  return demoData();
+}
+
+let orders = loadOrders();
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+    return true;
+  } catch (error) {
+    alert("無法儲存測試資料，請檢查瀏覽器儲存空間。");
+    return false;
+  }
+}
+
+function deliveryTotal(d) {
+  return d.qty * PRICE + d.shipping;
+}
+
+function allDeliveries() {
+  return orders.flatMap(order =>
+    order.deliveries.map(d => ({ ...d, order }))
+  );
+}
+
+function renderSummary() {
+  const ds = allDeliveries();
+  $("orderCount").textContent = orders.length;
+  $("boxCount").textContent =
+    ds.reduce((sum, d) => sum + d.qty, 0);
+  $("unpaidCount").textContent =
+    ds.filter(d => !d.paid).length;
+  $("pendingCount").textContent =
+    ds.filter(d => !d.shipped).length;
+}
+
+function orderCard(order) {
+  const boxes = order.deliveries.reduce(
+    (sum, d) => sum + d.qty, 0
+  );
+  const total = order.deliveries.reduce(
+    (sum, d) => sum + deliveryTotal(d), 0
+  );
+
+  return `
+    <div class="card">
+      <h3>${escapeHTML(order.buyer)}</h3>
+      <div class="muted">
+        ${escapeHTML(order.id)} ·
+        ${escapeHTML(order.phone)}
+      </div>
+      <p>
+        ${boxes} 盒 ·
+        <strong>${money(total)}</strong>
+      </p>
+      ${order.deliveries.map(d => `
+        <div class="delivery">
+          <div class="row">
+            <strong>
+              ${escapeHTML(d.type)} · ${d.qty} 盒
+            </strong>
+            <span class="pill">
+              ${d.shipped ? "已出貨" : "未出貨"}
+            </span>
+          </div>
+          <p>
+            ${escapeHTML(d.name)}<br>
+            ${escapeHTML(d.phone)}<br>
+            ${escapeHTML(d.address)}
+          </p>
+          <p class="muted">
+            商品 ${money(d.qty * PRICE)} ／
+            運費 ${money(d.shipping)}
+          </p>
+          <span class="pill">
+            ${d.paid ? "已收款" : "待收款"}
+          </span>
+          ${d.shipDate ? `
+            <span class="pill">
+              出貨日 ${escapeHTML(d.shipDate)}
+            </span>
+          ` : ""}
+        </div>
+      `).join("")}
+      ${order.note ? `
+        <p class="muted">
+          備註：${escapeHTML(order.note)}
+        </p>
+      ` : ""}
+    </div>
+  `;
+}
+
+function renderOrders() {
+  const q = $("search").value.trim().toLowerCase();
+
+  const filtered = orders.filter(order =>
+    [
+      order.id,
+      order.buyer,
+      order.phone,
+      ...order.deliveries.flatMap(d => [
+        d.name, d.phone, d.address
+      ])
+    ].some(value =>
+      String(value || "").toLowerCase().includes(q)
+    )
+  );
+
+  $("orderList").innerHTML =
+    filtered.map(orderCard).join("") ||
+    '<div class="card">沒有符合的訂單。</div>';
+}
+
+function findDelivery(id) {
+  for (const order of orders) {
+    const delivery = order.deliveries.find(d => d.id === id);
+    if (delivery) return delivery;
+  }
+  return null;
+}
+
+function updatePayment(id) {
+  const d = findDelivery(id);
+  if (!d) return;
+
+  if (d.paid && d.shipped && d.type === "宅配") {
+    alert("宅配已出貨，請先核對後再調整收款。");
+    return;
+  }
+
+  const question = d.paid
+    ? "確定取消這筆收款確認？"
+    : "確定已收到這筆配送的全額款項？";
+
+  if (!confirm(question)) return;
+
+  d.paid = !d.paid;
+  if (save()) renderAll();
+}
+
+function renderPayments() {
+  const ds = allDeliveries();
+
+  $("paymentList").innerHTML = ds.map(d => `
+    <div class="card">
+      <h3>${escapeHTML(d.name)}</h3>
+      <p class="muted">
+        ${escapeHTML(d.order.id)} ·
+        ${escapeHTML(d.type)} · ${d.qty} 盒
+      </p>
+      <p>
+        應收金額：
+        <strong>${money(deliveryTotal(d))}</strong>
+      </p>
+      <p>
+        <span class="pill">
+          ${d.paid ? "已收款" : "待收款"}
+        </span>
+      </p>
+      <button
+        class="${d.paid ? "secondary" : "primary"}"
+        data-payment="${escapeHTML(d.id)}">
+        ${d.paid ? "取消收款確認" : "確認全額收款"}
+      </button>
+    </div>
+  `).join("");
+}
+
+function updateShipDate(id, date) {
+  const d = findDelivery(id);
+  if (!d || d.shipped) return;
+
+  d.shipDate = date;
+  if (save()) renderAll();
+}
+
+function updateShipping(id) {
+  const d = findDelivery(id);
+  if (!d) return;
+
+  if (!d.shipped) {
+    if (!d.shipDate) {
+      alert("請先安排出貨日期。");
+      return;
+    }
+    if (d.type === "宅配" && !d.paid) {
+      alert("宅配尚未收款，不能標記已出貨。");
+      return;
+    }
+  }
+
+  if (!confirm(d.shipped
+    ? "確定取消已出貨標記？"
+    : "確定這筆配送已經出貨？")) return;
+
+  d.shipped = !d.shipped;
+  if (save()) renderAll();
+}
+
+function renderShipping() {
+  const ds = allDeliveries();
+
+  $("shippingList").innerHTML = ds.map(d => `
+    <div class="card">
+      <h3>${escapeHTML(d.name)} · ${d.qty} 盒</h3>
+      <p class="muted">
+        ${escapeHTML(d.order.id)} ·
+        ${escapeHTML(d.type)}
+      </p>
+      <p>
+        ${escapeHTML(d.phone)}<br>
+        ${escapeHTML(d.address)}
+      </p>
+      <p>
+        <span class="pill">
+          ${d.paid ? "已收款" : "待收款"}
+        </span>
+        <span class="pill">
+          ${d.shipped ? "已出貨" : "待出貨"}
+        </span>
+      </p>
+      <div class="no-print">
+        <label>預計出貨／自取日期</label>
+        <input
+          type="date"
+          value="${escapeHTML(d.shipDate)}"
+          data-shipdate="${escapeHTML(d.id)}"
+          ${d.shipped ? "disabled" : ""}>
+        <p></p>
+        <button
+          class="${d.shipped ? "secondary" : "primary"}"
+          data-shipped="${escapeHTML(d.id)}">
+          ${d.shipped ? "取消出貨標記" : "確認已出貨"}
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+let deliveryCounter = 0;
+
+function addDelivery() {
+  deliveryCounter++;
+  const id = deliveryCounter;
+  const div = document.createElement("div");
+  div.className = "delivery delivery-form";
+
+  div.innerHTML = `
+    <div class="row">
+      <h3>配送資料 ${id}</h3>
+      <button class="danger remove-delivery">移除</button>
+    </div>
+
+    <label>配送方式</label>
+    <select class="type">
+      <option value="宅配">宅配</option>
+      <option value="自取">自取</option>
+    </select>
+
+    <label>收件人姓名</label>
+    <input class="name">
+
+    <label>收件人電話</label>
+    <input class="phone" type="tel">
+
+    <label>宅配地址</label>
+    <input class="address">
+
+    <label>盒數</label>
+    <input class="qty" type="number" min="1" value="1">
+
+    <label>配送備註</label>
+    <input class="note">
+
+    <p class="muted freight"></p>
+  `;
+
+  div.querySelector(".remove-delivery").onclick = () => {
+    div.remove();
+    estimate();
+  };
+
+  div.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("input", estimate);
+    el.addEventListener("change", estimate);
+  });
+
+  $("deliveryForms").appendChild(div);
+  estimate();
+}
+
+function collectDeliveries() {
+  return [...document.querySelectorAll(".delivery-form")]
+    .map((form, index) => ({
+      id: "D-" + Date.now() + "-" + index,
+      type: form.querySelector(".type").value,
+      name: form.querySelector(".name").value.trim(),
+      phone: form.querySelector(".phone").value.trim(),
+      address: form.querySelector(".address").value.trim(),
+      qty: Number(form.querySelector(".qty").value),
+      note: form.querySelector(".note").value.trim()
+    }));
+}
+
+function calculateDelivery(d) {
+  const pieces = d.type === "宅配"
+    ? Math.ceil(d.qty / BOXES_PER_PIECE)
+    : 0;
+
+  return {
+    ...d,
+    address: d.type === "宅配" ? d.address : "",
+    shipping: pieces * SHIPPING_FEE,
+    paid: false,
+    shipped: false,
+    shipDate: ""
+  };
+}
+
+function estimate() {
+  const lines = collectDeliveries();
+  let total = 0;
+
+  const forms = document.querySelectorAll(".delivery-form");
+
+  lines.forEach((line, i) => {
+    const qty = Number.isInteger(line.qty) && line.qty > 0
+      ? line.qty : 0;
+    const pieces = line.type === "宅配"
+      ? Math.ceil(qty / BOXES_PER_PIECE)
+      : 0;
+    const shipping = pieces * SHIPPING_FEE;
+
+    total += qty * PRICE + shipping;
+
+    forms[i].querySelector(".freight").textContent =
+      `${pieces} 件貨運 · 運費 ${money(shipping)}`;
+  });
+
+  $("estimate").textContent = money(total);
+}
+
+function createOrder() {
+  const buyer = $("buyerName").value.trim();
+  const phone = $("buyerPhone").value.trim();
+  const lines = collectDeliveries();
+
+  if (!buyer || !phone) {
+    alert("請填寫訂購人姓名與電話。");
+    return;
+  }
+
+  if (!lines.length) {
+    alert("請至少新增一筆配送資料。");
+    return;
+  }
+
+  for (const [i, d] of lines.entries()) {
+    if (
+      !d.name ||
+      !d.phone ||
+      !Number.isInteger(d.qty) ||
+      d.qty < 1 ||
+      (d.type === "宅配" && !d.address)
+    ) {
+      alert(`第 ${i + 1} 筆配送資料不完整。`);
+      return;
+    }
+  }
+
+  if (!confirm("確定建立這筆測試訂單？")) return;
+
+  const order = {
+    id: makeId(),
+    buyer,
+    phone,
+    note: $("orderNote").value.trim(),
+    deliveries: lines.map(calculateDelivery)
+  };
+
+  orders.unshift(order);
+
+  if (!save()) {
+    orders.shift();
+    return;
+  }
+
+  $("buyerName").value = "";
+  $("buyerPhone").value = "";
+  $("orderNote").value = "";
+  $("deliveryForms").innerHTML = "";
+  addDelivery();
+
+  renderAll();
+  switchPage("orders");
+
+  alert("測試訂單建立成功：" + order.id);
+}
+
+function renderAll() {
+  renderSummary();
+  renderOrders();
+  renderPayments();
+  renderShipping();
+}
+
+function switchPage(page) {
+  ["orders", "payments", "shipping", "create"].forEach(id => {
+    $(id).classList.toggle("hide", id !== page);
+  });
+
+  document.querySelectorAll("nav button").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.page === page
+    );
+  });
+}
+
+document.querySelectorAll("nav button").forEach(button => {
+  button.addEventListener("click", () => {
+    switchPage(button.dataset.page);
+  });
+});
+
+$("search").addEventListener("input", renderOrders);
+
+$("paymentList").addEventListener("click", event => {
+  const button = event.target.closest("[data-payment]");
+  if (button) updatePayment(button.dataset.payment);
+});
+
+$("shippingList").addEventListener("change", event => {
+  if (event.target.matches("[data-shipdate]")) {
+    updateShipDate(
+      event.target.dataset.shipdate,
+      event.target.value
+    );
+  }
+});
+
+$("shippingList").addEventListener("click", event => {
+  const button = event.target.closest("[data-shipped]");
+  if (button) updateShipping(button.dataset.shipped);
+});
+
+addDelivery();
+renderAll();
+</script>
+</body>
+</html>
