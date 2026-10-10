@@ -720,10 +720,36 @@ function addDelivery() {
     estimate();
   };
 
-  div.querySelectorAll("input, select").forEach(el => {
-    el.addEventListener("input", estimate);
-    el.addEventListener("change", estimate);
+  const deliveryType = div.querySelector(".type");
+
+function updateDeliveryFields() {
+  const isPickup = deliveryType.value === "自取";
+
+  [".name", ".phone", ".address"].forEach(selector => {
+    const field = div.querySelector(selector);
+    if (!field) return;
+
+    const label = field.previousElementSibling;
+
+    field.style.display = isPickup ? "none" : "";
+    field.required = !isPickup;
+
+    if (label && label.tagName === "LABEL") {
+      label.style.display = isPickup ? "none" : "";
+    }
+
+    if (isPickup) field.value = "";
   });
+}
+
+deliveryType.addEventListener("change", updateDeliveryFields);
+
+div.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("input", estimate);
+  el.addEventListener("change", estimate);
+});
+
+updateDeliveryFields();
 
   $("deliveryForms").appendChild(div);
   estimate();
@@ -796,17 +822,18 @@ async function createOrder() {
   }
 
   for (const [i, d] of lines.entries()) {
-    if (
-      !d.name ||
-      !d.phone ||
-      !Number.isInteger(d.qty) ||
-      d.qty < 1 ||
-      (d.type === "宅配" && !d.address)
-    ) {
-      alert(`第 ${i + 1} 筆配送資料不完整。`);
-      return;
-    }
+  if (
+    !Number.isInteger(d.qty) ||
+    d.qty < 1 ||
+    (
+      d.type === "宅配" &&
+      (!d.name || !d.phone || !d.address)
+    )
+  ) {
+    alert(`第 ${i + 1} 筆配送資料不完整。`);
+    return;
   }
+}
 
   if (!confirm("確定建立這筆測試訂單？")) return;
 
