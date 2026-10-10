@@ -105,6 +105,21 @@ p { line-height: 1.6; }
   .card { box-shadow: none; border: 1px solid #ddd; }
 }
 </style>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  const ADMIN_LIFF_ID = '2009767596-5QJw6URi';
+
+  async function initAdminLine() {
+    await liff.init({ liffId: ADMIN_LIFF_ID });
+
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return false;
+    }
+
+    return true;
+  }
+</script>
 </head>
 
 <body>
@@ -900,6 +915,9 @@ renderAll();
 
 (async function initAdmin() {
   try {
+    const lineReady = await initAdminLine();
+    if (!lineReady) return;
+
     const data = await loadOrdersFromGoogle();
 
     orders = (data.orders || []).map(row => ({
