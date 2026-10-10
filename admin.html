@@ -100,7 +100,7 @@ p { line-height: 1.6; }
 }
 .total { font-size: 22px; color: #c8692c; font-weight: bold; }
 /* 篩選條件與下方訂單卡片保持舒適間距 */
-#paymentList, #shippingList { margin-top: 24px; }
+#orderList, #paymentList, #shippingList { margin-top: 24px; }
 @media print {
   header, nav, button, .notice, .no-print { display: none !important; }
   body { background: white; }
@@ -576,9 +576,11 @@ function renderPayments() {
 }
 
 
+const updatingShipDates = new Set();
 async function updateShipDate(id, date) {
   const d = findDelivery(id);
-  if (!d || d.shipped) return;
+  if (!d || d.shipped || d.shipDate === date || updatingShipDates.has(id)) return;
+  updatingShipDates.add(id);
 
   try {
     const response = await fetch(
@@ -611,6 +613,8 @@ async function updateShipDate(id, date) {
   } catch (error) {
     renderAll();
     alert("更新失敗：" + error.message);
+  } finally {
+    updatingShipDates.delete(id);
   }
 }
 
