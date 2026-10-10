@@ -178,6 +178,8 @@ async function getAdminLineUserId() {
 
   <section id="payments" class="hide">
     <h2>收款管理</h2>
+    <label for="paymentFilter">收款狀態</label>
+    <select id="paymentFilter"><option value="all">全部</option><option value="unpaid">未收款</option><option value="paid">已收款</option></select>
     <div id="paymentList"></div>
   </section>
 
@@ -186,6 +188,8 @@ async function getAdminLineUserId() {
       <h2>出貨管理</h2>
       <button class="secondary" onclick="window.print()">列印</button>
     </div>
+    <label for="shippingFilter">出貨狀態</label>
+    <select id="shippingFilter"><option value="all">全部</option><option value="pending">未出貨</option><option value="shipped">已出貨</option></select>
     <div id="shippingList"></div>
   </section>
 
@@ -538,7 +542,8 @@ async function updatePayment(id) {
 
 
 function renderPayments() {
-  const ds = allDeliveries();
+  const filter = $("paymentFilter").value;
+  const ds = allDeliveries().filter(d => filter === "all" || (filter === "paid" ? d.paid : !d.paid));
 
   $("paymentList").innerHTML = ds.map(d => `
     <div class="card">
@@ -616,8 +621,8 @@ async function updateShipping(id) {
       return;
     }
 
-    if (d.type === "宅配" && !d.paid) {
-      alert("宅配尚未收款，不能標記已出貨。");
+    if (d.type === "宅配" && !d.paid &&
+        !confirm("提醒：這筆宅配訂單尚未收款。確定要先出貨、之後再追蹤收款嗎？")) {
       return;
     }
   }
@@ -666,7 +671,8 @@ async function updateShipping(id) {
 
 
 function renderShipping() {
-  const ds = allDeliveries();
+  const filter = $("shippingFilter").value;
+  const ds = allDeliveries().filter(d => filter === "all" || (filter === "shipped" ? d.shipped : !d.shipped));
 
   $("shippingList").innerHTML = ds.map(d => `
     <div class="card">
@@ -865,7 +871,7 @@ async function createOrder() {
   }
 }
 
-  if (!confirm("資料正確 並 建立訂單")) return;
+  if (!confirm("訂單資料是否確認完畢並建立訂單？")) return;
 
   const order = {
     id: makeId(),
@@ -1005,6 +1011,8 @@ document.querySelectorAll("nav button").forEach(button => {
 });
 
 $("search").addEventListener("input", renderOrders);
+$("paymentFilter").addEventListener("change", renderPayments);
+$("shippingFilter").addEventListener("change", renderShipping);
 
 $("paymentList").addEventListener("click", event => {
   const button = event.target.closest("[data-payment]");
