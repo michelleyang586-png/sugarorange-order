@@ -825,7 +825,8 @@ async function createOrder() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Admin-Password": adminPassword
+        "X-Admin-Password": adminPassword,
+        "Authorization": "Bearer " + (liff.getAccessToken() || "")
       },
       body: JSON.stringify({
         action: "createOrder",
