@@ -798,7 +798,7 @@ async function createOrder() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + (liff.getAccessToken() || "")
+        "X-Admin-Password": window.prompt("請輸入管理員密碼")
       },
       body: JSON.stringify({
         action: "createOrder",
