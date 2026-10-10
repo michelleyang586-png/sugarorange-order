@@ -445,7 +445,7 @@ async function updatePayment(id) {
 
   if (!confirm(question)) return;
 
-  const password = window.prompt("請輸入管理員密碼");
+  const password = adminPassword;
   if (!password) return;
 
   try {
@@ -513,7 +513,7 @@ async function updateShipDate(id, date) {
   const d = findDelivery(id);
   if (!d || d.shipped) return;
 
-  const password = window.prompt("請輸入管理員密碼");
+  const password = adminPassword;
   if (!password) {
     renderAll();
     return;
@@ -577,7 +577,7 @@ async function updateShipping(id) {
       : "確定取消已出貨標記？"
   )) return;
 
-  const password = window.prompt("請輸入管理員密碼");
+  const password = adminPassword;
   if (!password) return;
 
   try {
