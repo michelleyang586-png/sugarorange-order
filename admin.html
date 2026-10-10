@@ -174,7 +174,11 @@ async function getAdminLineUserId() {
 
   <section id="orders">
     <h2>訂單管理</h2>
-    <input id="search" placeholder="搜尋姓名、電話、訂單編號">
+    <input id="search" placeholder="搜尋訂購人、收件人、電話、地址或訂單編號">
+    <label for="orderStatusFilter">訂單狀態</label>
+    <select id="orderStatusFilter"><option value="all">全部</option><option value="pending" selected>未完成</option><option value="completed">已完成</option></select>
+    <label for="orderTypeFilter">配送方式</label>
+    <select id="orderTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
     <div id="orderList"></div>
   </section>
 
@@ -411,82 +415,53 @@ function renderSummary() {
     ds.filter(d => !d.shipped).length;
 }
 
-function orderCard(order) {
-  const boxes = order.deliveries.reduce(
-    (sum, d) => sum + d.qty, 0
-  );
-  const total = order.deliveries.reduce(
-    (sum, d) => sum + deliveryTotal(d), 0
-  );
-
+// 訂單管理以每一筆配送為單位篩選與操作，避免多地址訂單誤操作。
+function orderCard(order, visibleDeliveries) {
+  const boxes = order.deliveries.reduce((sum,d)=>sum+d.qty,0);
+  const total = order.deliveries.reduce((sum,d)=>sum+deliveryTotal(d),0);
   return `
     <div class="card">
-      <h3>${escapeHTML(order.buyer)}</h3>
-      <div class="muted">
-        ${escapeHTML(order.id)} ·
-        ${escapeHTML(order.phone)}
-      </div>
-      <p>
-        ${boxes} 盒 ·
-        <strong>${money(total)}</strong>
-      </p>
-      ${order.deliveries.map(d => `
+      <h3>訂購人：${escapeHTML(order.buyer)}</h3>
+      <p class="muted">訂購電話：${escapeHTML(order.phone)}<br>訂單編號：${escapeHTML(order.id)}</p>
+      <p>整筆訂單：${boxes} 盒 · <strong>${money(total)}</strong></p>
+      ${visibleDeliveries.map(d=>`
         <div class="delivery">
-          <div class="row">
-            <strong>
-              ${escapeHTML(d.type)} · ${d.qty} 盒
-            </strong>
-            <span class="pill">
-              ${d.shipped ? "已出貨" : "未出貨"}
-            </span>
+          <div class="row"><strong>${escapeHTML(d.type)} · ${d.qty} 盒</strong>
+            <span class="pill">${d.shipped ? (d.type==='自取'?'已交貨':'已出貨') : (d.type==='自取'?'未交貨':'未出貨')}</span></div>
+          ${d.type==='宅配' ? `<p>收件人：${escapeHTML(d.name || order.buyer)}<br>收件電話：${escapeHTML(d.phone || order.phone)}<br>地址：${escapeHTML(d.address)}</p>` : `<p>取貨人：${escapeHTML(order.buyer)}<br>電話：${escapeHTML(order.phone)}</p>`}
+          <p>應收：<strong>${money(deliveryTotal(d))}</strong>（含運費 ${money(d.shipping)}）</p>
+          <p><span class="pill">${d.paid?'已收款':'未收款'}</span></p>
+          <div class="no-print">
+            <label>預計出貨／自取日期</label>
+            <input type="date" value="${escapeHTML(d.shipDate)}" data-shipdate="${escapeHTML(d.id)}" ${d.shipped?'disabled':''}>
+            <div class="actions" style="margin-top:10px">
+              <button class="${d.paid?'secondary':'primary'}" data-payment="${escapeHTML(d.id)}">${d.paid?'取消收款確認':'確認全額收款'}</button>
+              <button class="${d.shipped?'secondary':'primary'}" data-shipped="${escapeHTML(d.id)}">${d.shipped?(d.type==='自取'?'取消已交貨':'取消已出貨'):(d.type==='自取'?'確認已交貨':'確認已出貨')}</button>
+            </div>
+            ${d.type==='自取'&&!d.paid&&!d.shipped ? `<button class="primary" style="margin-top:8px;width:100%" data-pickup-complete="${escapeHTML(d.id)}">收款＋交貨一次完成</button>`:''}
           </div>
-          <p>
-            ${escapeHTML(d.name)}<br>
-            ${escapeHTML(d.phone)}<br>
-            ${escapeHTML(d.address)}
-          </p>
-          <p class="muted">
-            商品 ${money(Number.isFinite(deliveryTotal(d)) ? deliveryTotal(d) - d.shipping : NaN)} ／
-            運費 ${money(d.shipping)}
-          </p>
-          <span class="pill">
-            ${d.paid ? "已收款" : "待收款"}
-          </span>
-          ${d.shipDate ? `
-            <span class="pill">
-              出貨日 ${escapeHTML(d.shipDate)}
-            </span>
-          ` : ""}
         </div>
-      `).join("")}
-      ${order.note ? `
-        <p class="muted">
-          備註：${escapeHTML(order.note)}
-        </p>
-      ` : ""}
-    </div>
-  `;
+      `).join('')}
+      ${order.note?`<p class="muted">備註：${escapeHTML(order.note)}</p>`:''}
+    </div>`;
 }
 
 function renderOrders() {
-  const q = $("search").value.trim().toLowerCase();
-
-  const filtered = orders.filter(order =>
-    [
-      order.id,
-      order.buyer,
-      order.phone,
-      ...order.deliveries.flatMap(d => [
-        d.name, d.phone, d.address
-      ])
-    ].some(value =>
-      String(value || "").toLowerCase().includes(q)
-    )
-  );
-
-  $("orderList").innerHTML =
-    filtered.map(orderCard).join("") ||
-    '<div class="card">沒有符合的訂單。</div>';
+  const q = $('search').value.trim().toLowerCase();
+  const status = $('orderStatusFilter').value;
+  const type = $('orderTypeFilter').value;
+  const cards = orders.map(order => {
+    const visible = order.deliveries.filter(d => {
+      const matchesType = type==='all'||d.type===type;
+      const completed = d.paid && d.shipped;
+      const matchesStatus = status==='all'||(status==='completed'?completed:!completed);
+      const matchesText = !q || [order.id,order.buyer,order.phone,d.name,d.phone,d.address]
+        .some(v=>String(v||'').toLowerCase().includes(q));
+      return matchesType&&matchesStatus&&matchesText;
+    });
+    return visible.length ? orderCard(order,visible) : '';
+  }).filter(Boolean);
+  $('orderList').innerHTML = cards.join('') || '<div class="card">沒有符合條件的訂單。</div>';
 }
 
 function findDelivery(id) {
@@ -590,6 +565,12 @@ function renderPayments() {
         data-payment="${escapeHTML(d.id)}">
         ${d.paid ? "取消收款確認" : "確認全額收款"}
       </button>
+      <div class="actions" style="margin-top:10px">
+        <button class="${d.shipped ? "secondary" : "primary"}" data-shipped="${escapeHTML(d.id)}">
+          ${d.shipped ? (d.type === "自取" ? "取消已交貨" : "取消已出貨") : (d.type === "自取" ? "確認已交貨" : "確認已出貨")}
+        </button>
+        ${d.type === "自取" && !d.paid && !d.shipped ? `<button class="primary" data-pickup-complete="${escapeHTML(d.id)}">收款＋交貨一次完成</button>` : ""}
+      </div>
     </div>
   `).join("");
 }
@@ -694,6 +675,52 @@ async function updateShipping(id) {
 }
 
 
+// 現場自取：一次確認收款及交貨；每一步由後端寫入 Sheets，失敗時提示人工核對。
+async function completePickup(id, button) {
+  const d = findDelivery(id);
+  if (!d || d.type !== "自取" || d.paid || d.shipped) return;
+  if (!confirm(`確定「${displayBuyer(d)}」已現場全額付款並領取 ${d.qty} 盒？\n應收：${money(deliveryTotal(d))}`)) return;
+  button.disabled = true;
+  let completed = 0;
+  try {
+    const headers = {
+      "Content-Type": "application/json",
+      ...await requireAdminCredentials(),
+      "Authorization": "Bearer " + (liff.getAccessToken() || "")
+    };
+    const call = async (action, extra) => {
+      const response = await fetch("https://sugarorange-api.vercel.app/api/order", {
+        method: "POST", headers,
+        body: JSON.stringify({action, detailId:id, ...extra})
+      });
+      const result = await response.json();
+      if (!response.ok || result.status !== "success") {
+        if (response.status === 401 || response.status === 403) clearAdminSession();
+        throw new Error(result.message || action + " 更新失敗");
+      }
+    };
+    if (!d.shipDate) {
+      const date = today();
+      await call("setShipDate", {shipDate:date});
+      d.shipDate = date;
+    }
+    await call("markPaid", {paid:true});
+    d.paid = true;
+    completed = 1;
+    await call("markShipped", {shipped:true});
+    d.shipped = true;
+    completed = 2;
+    renderAll();
+    alert("已完成收款及交貨，資料已同步 Google Sheets。");
+  } catch (error) {
+    renderAll();
+    alert((completed ? "收款已更新，但交貨更新未完成。" : "快速交貨未全部完成。") +
+      "\n請重新整理並核對 Google Sheets，避免重複操作。\n原因：" + error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function renderShipping() {
   const filter = $("shippingFilter").value;
   const typeFilter = $("shippingTypeFilter").value;
@@ -733,8 +760,12 @@ function renderShipping() {
         <button
           class="${d.shipped ? "secondary" : "primary"}"
           data-shipped="${escapeHTML(d.id)}">
-          ${d.shipped ? "取消出貨標記" : "確認已出貨"}
+          ${d.shipped ? (d.type === "自取" ? "取消已交貨" : "取消出貨標記") : (d.type === "自取" ? "確認已交貨" : "確認已出貨")}
         </button>
+        <button class="${d.paid ? "secondary" : "primary"}" data-payment="${escapeHTML(d.id)}" style="margin-top:8px;width:100%">
+          ${d.paid ? "取消收款確認" : "確認全額收款"}
+        </button>
+        ${d.type === "自取" && !d.paid && !d.shipped ? `<button class="primary" data-pickup-complete="${escapeHTML(d.id)}" style="margin-top:8px;width:100%">收款＋交貨一次完成</button>` : ""}
       </div>
     </div>
   `).join("");
@@ -1040,14 +1071,31 @@ document.querySelectorAll("nav button").forEach(button => {
 });
 
 $("search").addEventListener("input", renderOrders);
+$("orderStatusFilter").addEventListener("change", renderOrders);
+$("orderTypeFilter").addEventListener("change", renderOrders);
+$("orderList").addEventListener("change", event => {
+  if (event.target.matches("[data-shipdate]")) updateShipDate(event.target.dataset.shipdate,event.target.value);
+});
+$("orderList").addEventListener("click", event => {
+  const quick=event.target.closest("[data-pickup-complete]");
+  if(quick)return completePickup(quick.dataset.pickupComplete,quick);
+  const payment=event.target.closest("[data-payment]");
+  if(payment)return updatePayment(payment.dataset.payment);
+  const shipped=event.target.closest("[data-shipped]");
+  if(shipped)return updateShipping(shipped.dataset.shipped);
+});
 $("paymentFilter").addEventListener("change", renderPayments);
 $("paymentTypeFilter").addEventListener("change", renderPayments);
 $("shippingFilter").addEventListener("change", renderShipping);
 $("shippingTypeFilter").addEventListener("change", renderShipping);
 
 $("paymentList").addEventListener("click", event => {
-  const button = event.target.closest("[data-payment]");
-  if (button) updatePayment(button.dataset.payment);
+  const quick = event.target.closest("[data-pickup-complete]");
+  if (quick) return completePickup(quick.dataset.pickupComplete, quick);
+  const payment = event.target.closest("[data-payment]");
+  if (payment) return updatePayment(payment.dataset.payment);
+  const shipped = event.target.closest("[data-shipped]");
+  if (shipped) return updateShipping(shipped.dataset.shipped);
 });
 
 $("shippingList").addEventListener("change", event => {
@@ -1060,8 +1108,12 @@ $("shippingList").addEventListener("change", event => {
 });
 
 $("shippingList").addEventListener("click", event => {
-  const button = event.target.closest("[data-shipped]");
-  if (button) updateShipping(button.dataset.shipped);
+  const quick = event.target.closest("[data-pickup-complete]");
+  if (quick) return completePickup(quick.dataset.pickupComplete, quick);
+  const payment = event.target.closest("[data-payment]");
+  if (payment) return updatePayment(payment.dataset.payment);
+  const shipped = event.target.closest("[data-shipped]");
+  if (shipped) return updateShipping(shipped.dataset.shipped);
 });
 
 addDelivery();
