@@ -139,9 +139,10 @@ async function getAdminLineUserId() {
 
 <main>
   <div class="notice">
-    目前為測試預覽版：不需 LINE 登入，資料只保存在這台瀏覽器，
-    不會寫入正式 Google 試算表。
-  </div>
+  🍊 餘有榮焉訂單管理系統<br>
+  訂單、收款及出貨資料會同步至 Google 試算表。
+  請確認資料正確後再送出。
+</div>
 
   <div class="grid">
     <div class="card summary">
@@ -206,7 +207,7 @@ async function getAdminLineUserId() {
         ＋ 新增宅配地址／自取
       </button>
 
-      <p class="muted">
+      <p class="muted" id="pricingNotice">
         砂糖橘每盒 NT$400；宅配每 4 盒一件，每件 NT$150。
         不同宅配地址分開計算運費。
       </p>
@@ -214,7 +215,7 @@ async function getAdminLineUserId() {
       <p class="total" id="estimate">NT$0</p>
 
       <button class="primary" style="width:100%" onclick="createOrder()">
-        建立測試訂單
+        建立訂單
       </button>
     </div>
   </section>
@@ -223,11 +224,10 @@ async function getAdminLineUserId() {
 <script>
 "use strict";
 
-// 此版本為獨立預覽版，不連接正式後端。
-const PRICE = 400;
-const BOXES_PER_PIECE = 4;
-const SHIPPING_FEE = 150;
-const STORAGE_KEY = "youyu_admin_demo_v1";
+// 正式管理後台：訂單資料以後端 Google Sheets 為準。
+let PRICE = 400;
+let BOXES_PER_PIECE = 4;
+let SHIPPING_FEE = 150;
 
 const $ = id => document.getElementById(id);
 
@@ -242,7 +242,7 @@ function escapeHTML(value) {
 }
 
 function money(value) {
-  return "NT$" + Number(value || 0).toLocaleString("zh-TW");
+  return Number.isFinite(Number(value)) ? "NT$" + Number(value).toLocaleString("zh-TW") : "金額待核對";
 }
 
 function today() {
@@ -256,79 +256,120 @@ function makeId() {
     Math.random().toString(36).slice(2, 7).toUpperCase();
 }
 
-function demoData() {
-  return [
-    {
-      id: "DEMO-001",
-      buyer: "測試客戶 A",
-      phone: "0900000000",
-      note: "測試資料",
-      deliveries: [
-        {
-          id: "D-001",
-          type: "宅配",
-          name: "測試收件人",
-          phone: "0900000000",
-          address: "測試地址（非真實地址）",
-          qty: 3,
-          shipping: 150,
-          paid: false,
-          shipped: false,
-          shipDate: "",
-          note: ""
-        }
-      ]
-    },
-    {
-      id: "DEMO-002",
-      buyer: "測試客戶 B",
-      phone: "0911111111",
-      note: "",
-      deliveries: [
-        {
-          id: "D-002",
-          type: "自取",
-          name: "測試客戶 B",
-          phone: "0911111111",
-          address: "",
-          qty: 2,
-          shipping: 0,
-          paid: true,
-          shipped: false,
-          shipDate: today(),
-          note: ""
-        }
-      ]
+
+
+const ADMIN_SESSION_KEY = 'sugarorangeAdminSession';
+
+function getAdminSession() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+
+    if (
+      !saved ||
+      !saved.token ||
+      !saved.expires ||
+      saved.expires <= Math.floor(Date.now() / 1000)
+    ) {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      return null;
     }
-  ];
+
+    return saved;
+  } catch {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    return null;
+  }
 }
 
-let adminPassword = sessionStorage.getItem('adminPassword') || '';
-async function loadOrdersFromGoogle() {
-  const password = adminPassword || window.prompt('請輸入管理員密碼');
+function saveAdminSession(data) {
+  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+    token: data.token,
+    expires: data.expires,
+    lineUserId: data.lineUserId
+  }));
+}
 
-  if (!password) {
-    throw new Error('尚未輸入管理員密碼');
-  }
+function clearAdminSession() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+}  
+async function requireAdminCredentials() {
+  const savedSession = getAdminSession();
+  if (savedSession) return { 'X-Admin-Session': savedSession.token };
 
+  const password = adminPassword || window.prompt('管理員登入已到期，請重新輸入管理員密碼');
+  if (!password) throw new Error('尚未輸入管理員密碼，操作已取消');
+
+  // 先重新建立 7 天登入憑證，成功後才允許修改資料。
+  const session = await loginAdminForSevenDays(password);
+  adminPassword = '';
+  sessionStorage.removeItem('adminPassword');
+  return { 'X-Admin-Session': session.token };
+}
+
+async function loginAdminForSevenDays(password) {
   const response = await fetch(
-    'https://sugarorange-api.vercel.app/api/order?action=getOrders',
+    'https://sugarorange-api.vercel.app/api/order',
     {
-      method: 'GET',
+      method: 'POST',
       headers: {
-        'X-Admin-Password': password
-      }
+        'Content-Type': 'application/json',
+        'X-Admin-Password': password,
+        'Authorization': 'Bearer ' + (liff.getAccessToken() || '')
+      },
+      body: JSON.stringify({
+        action: 'adminLogin'
+      })
     }
   );
 
   const result = await response.json();
 
   if (!response.ok || result.status !== 'success') {
-    throw new Error(result.message || '讀取訂單失敗');
+    throw new Error(result.message || '管理員登入失敗');
   }
+
+  saveAdminSession(result);
+  return result;
+}  
+let adminPassword = sessionStorage.getItem('adminPassword') || '';
+async function loadOrdersFromGoogle() {
+  const savedSession = getAdminSession();
+const password = savedSession ? '' : (adminPassword || window.prompt('請輸入管理員密碼'));
+
+  if (!savedSession && !password) {
+  throw new Error('尚未輸入管理員密碼');
+}
+
+  const response = await fetch(
+    'https://sugarorange-api.vercel.app/api/order?action=getOrders',
+    {
+      method: 'GET',
+      headers: {
+  ...(savedSession
+    ? { 'X-Admin-Session': savedSession.token }
+    : { 'X-Admin-Password': password }),
+  'Authorization': 'Bearer ' + (liff.getAccessToken() || '')
+}
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok || result.status !== 'success') {
+  if (savedSession && (response.status === 401 || response.status === 403)) {
+    clearAdminSession();
+    throw new Error('管理員登入已失效，請重新整理此頁面並輸入密碼。');
+  }
+
+  throw new Error(result.message || '讀取訂單失敗');
+}
   
-  adminPassword = password;
-  sessionStorage.setItem('adminPassword', password);
+  if (!savedSession && password) {
+  await loginAdminForSevenDays(password);
+}
+
+adminPassword = '';
+sessionStorage.removeItem('adminPassword');
   
   return result;
   }
@@ -336,18 +377,11 @@ async function loadOrdersFromGoogle() {
 
 let orders = [];
 
-function save() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-    return true;
-  } catch (error) {
-    alert("無法儲存測試資料，請檢查瀏覽器儲存空間。");
-    return false;
-  }
-}
 
 function deliveryTotal(d) {
-  return d.qty * PRICE + d.shipping;
+  return d.amount !== undefined && d.amount !== null
+    ? Number(d.amount)
+    : NaN;
 }
 
 function allDeliveries() {
@@ -402,7 +436,7 @@ function orderCard(order) {
             ${escapeHTML(d.address)}
           </p>
           <p class="muted">
-            商品 ${money(d.qty * PRICE)} ／
+            商品 ${money(Number.isFinite(deliveryTotal(d)) ? deliveryTotal(d) - d.shipping : NaN)} ／
             運費 ${money(d.shipping)}
           </p>
           <span class="pill">
@@ -469,18 +503,16 @@ async function updatePayment(id) {
 
   if (!confirm(question)) return;
 
-  const password = adminPassword;
-  if (!password) return;
-
   try {
     const response = await fetch(
       "https://sugarorange-api.vercel.app/api/order",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Password": password
-        },
+  "Content-Type": "application/json",
+  ...await requireAdminCredentials(),
+  "Authorization": "Bearer " + (liff.getAccessToken() || "")
+},
         body: JSON.stringify({
           action: "markPaid",
           detailId: id,
@@ -492,6 +524,7 @@ async function updatePayment(id) {
     const result = await response.json();
 
     if (!response.ok || result.status !== "success") {
+      if (response.status === 401 || response.status === 403) clearAdminSession();
       throw new Error(result.message || "更新收款失敗");
     }
 
@@ -537,21 +570,16 @@ async function updateShipDate(id, date) {
   const d = findDelivery(id);
   if (!d || d.shipped) return;
 
-  const password = adminPassword;
-  if (!password) {
-    renderAll();
-    return;
-  }
-
   try {
     const response = await fetch(
       "https://sugarorange-api.vercel.app/api/order",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Password": password
-        },
+  "Content-Type": "application/json",
+  ...await requireAdminCredentials(),
+  "Authorization": "Bearer " + (liff.getAccessToken() || "")
+},
         body: JSON.stringify({
           action: "setShipDate",
           detailId: id,
@@ -563,6 +591,7 @@ async function updateShipDate(id, date) {
     const result = await response.json();
 
     if (!response.ok || result.status !== "success") {
+      if (response.status === 401 || response.status === 403) clearAdminSession();
       throw new Error(result.message || "更新出貨日期失敗");
     }
 
@@ -601,18 +630,16 @@ async function updateShipping(id) {
       : "確定取消已出貨標記？"
   )) return;
 
-  const password = adminPassword;
-  if (!password) return;
-
   try {
     const response = await fetch(
       "https://sugarorange-api.vercel.app/api/order",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Password": password
-        },
+  "Content-Type": "application/json",
+  ...await requireAdminCredentials(),
+  "Authorization": "Bearer " + (liff.getAccessToken() || "")
+},
         body: JSON.stringify({
           action: "markShipped",
           detailId: id,
@@ -624,6 +651,7 @@ async function updateShipping(id) {
     const result = await response.json();
 
     if (!response.ok || result.status !== "success") {
+      if (response.status === 401 || response.status === 403) clearAdminSession();
       throw new Error(result.message || "更新出貨失敗");
     }
 
@@ -804,6 +832,8 @@ function estimate() {
   });
 
   $("estimate").textContent = money(total);
+  const notice = $("pricingNotice");
+  if (notice) notice.textContent = `砂糖橘每盒 ${money(PRICE)}；宅配每 ${BOXES_PER_PIECE} 盒一件，每件 ${money(SHIPPING_FEE)}。不同宅配地址分開計算運費。`;
 }
 
 async function createOrder() {
@@ -835,7 +865,7 @@ async function createOrder() {
   }
 }
 
-  if (!confirm("確定建立這筆測試訂單？")) return;
+  if (!confirm("訂單資料是否確認完畢並建立訂單？")) return;
 
   const order = {
     id: makeId(),
@@ -852,8 +882,8 @@ async function createOrder() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Admin-Password": adminPassword,
-        "Authorization": "Bearer " + (liff.getAccessToken() || "")
+        ...await requireAdminCredentials(),
+"Authorization": "Bearer " + (liff.getAccessToken() || "")
       },
       body: JSON.stringify({
         action: "createOrder",
@@ -876,12 +906,60 @@ async function createOrder() {
   const result = await response.json();
 
   if (!response.ok || result.status !== "success") {
+    if (response.status === 401 || response.status === 403) clearAdminSession();
     throw new Error(result.message || "訂單寫入失敗");
   }
 
-  order.id = result.orderId;
-  orders.unshift(order);
-  save();
+  let data;
+
+try {
+  data = await loadOrdersFromGoogle();
+} catch (error) {
+  alert(
+    '訂單已成功建立！\n' +
+    '訂單編號：' + result.orderId + '\n\n' +
+    '但重新讀取訂單資料失敗，請重新開啟管理後台確認。\n' +
+    '請勿重複送單。\n\n' +
+    '原因：' + error.message
+  );
+  return;
+}
+
+orders = (data.orders || []).map(row => {
+  const deliveries = (data.details || [])
+    .filter(detail => detail[1] === row[0])
+    .map(detail => {
+      const payment = (data.payments || [])
+        .find(p => p[2] === detail[0]);
+
+      return {
+        id: detail[0],
+        type: detail[4] || '',
+        name: detail[2] || '',
+        phone: detail[3] || '',
+        address: detail[5] || '',
+        qty: Number(detail[7]) || 0,
+        amount: payment && payment[4] !== undefined && payment[4] !== null && payment[4] !== ''
+          ? Number(payment[4])
+          : undefined,
+        shipping: Number(detail[10]) || 0,
+        paid: payment ? payment[7] === '已收款' : false,
+        shipped: detail[13] === '已出貨',
+        shipDate: detail[11] || '',
+        note: detail[17] || ''
+      };
+    });
+
+  return {
+    id: row[0] || '',
+    buyer: row[5] || '',
+    phone: row[6] || '',
+    note: row[16] || '',
+    deliveries
+  };
+});
+
+order.id = result.orderId;
 
 } catch (error) {
   alert("新增訂單失敗：" + error.message);
@@ -956,6 +1034,24 @@ renderAll();
     if (!lineReady) return;
 
     const data = await loadOrdersFromGoogle();
+    const config = data.settings || {};
+
+PRICE = Number(config.price) > 0
+  ? Number(config.price) : 400;
+
+BOXES_PER_PIECE = Number(config.boxesPerPiece) > 0
+  ? Number(config.boxesPerPiece) : 4;
+
+SHIPPING_FEE =
+  config.shippingPerPiece !== null &&
+  config.shippingPerPiece !== undefined &&
+  config.shippingPerPiece !== '' &&
+  Number.isFinite(Number(config.shippingPerPiece)) &&
+  Number(config.shippingPerPiece) >= 0
+    ? Number(config.shippingPerPiece)
+    : 150;
+
+estimate();
 
     orders = (data.orders || []).map(row => ({
       id: row[0] || '',
@@ -975,6 +1071,9 @@ renderAll();
             phone: detail[3] || '',
             address: detail[5] || '',
             qty: Number(detail[7]) || 0,
+            amount: payment && payment[4] !== undefined && payment[4] !== null && payment[4] !== ''
+              ? Number(payment[4])
+              : undefined,
             shipping: Number(detail[10]) || 0,
             paid: payment ? payment[7] === '已收款' : false,
             shipped: detail[13] === '已出貨',
