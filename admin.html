@@ -279,9 +279,9 @@ function demoData() {
   ];
 }
 
-
+let adminPassword = sessionStorage.getItem('adminPassword') || '';
 async function loadOrdersFromGoogle() {
-  const password = window.prompt('請輸入管理員密碼');
+  const password = adminPassword || window.prompt('請輸入管理員密碼');
 
   if (!password) {
     throw new Error('尚未輸入管理員密碼');
@@ -302,9 +302,12 @@ async function loadOrdersFromGoogle() {
   if (!response.ok || result.status !== 'success') {
     throw new Error(result.message || '讀取訂單失敗');
   }
-
+  
+  adminPassword = password;
+  sessionStorage.setItem('adminPassword', password);
+  
   return result;
-}
+  }
 
 
 let orders = [];
@@ -798,7 +801,7 @@ async function createOrder() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Admin-Password": window.prompt("請輸入管理員密碼")
+        "X-Admin-Password": adminPassword
       },
       body: JSON.stringify({
         action: "createOrder",
