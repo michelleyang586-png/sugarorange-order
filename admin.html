@@ -179,7 +179,9 @@ async function getAdminLineUserId() {
   <section id="payments" class="hide">
     <h2>收款管理</h2>
     <label for="paymentFilter">收款狀態</label>
-    <select id="paymentFilter"><option value="all">全部</option><option value="unpaid">未收款</option><option value="paid">已收款</option></select>
+    <select id="paymentFilter"><option value="all">全部</option><option value="unpaid" selected>未收款</option><option value="paid">已收款</option></select>
+    <label for="paymentTypeFilter">配送方式</label>
+    <select id="paymentTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
     <div id="paymentList"></div>
   </section>
 
@@ -189,7 +191,9 @@ async function getAdminLineUserId() {
       <button class="secondary" onclick="window.print()">列印</button>
     </div>
     <label for="shippingFilter">出貨狀態</label>
-    <select id="shippingFilter"><option value="all">全部</option><option value="pending">未出貨</option><option value="shipped">已出貨</option></select>
+    <select id="shippingFilter"><option value="all">全部</option><option value="pending" selected>未出貨</option><option value="shipped">已出貨</option></select>
+    <label for="shippingTypeFilter">配送方式</label>
+    <select id="shippingTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
     <div id="shippingList"></div>
   </section>
 
@@ -555,7 +559,11 @@ function displayPhone(d) {
 
 function renderPayments() {
   const filter = $("paymentFilter").value;
-  const ds = allDeliveries().filter(d => filter === "all" || (filter === "paid" ? d.paid : !d.paid));
+  const typeFilter = $("paymentTypeFilter").value;
+  const ds = allDeliveries().filter(d =>
+    (filter === "all" || (filter === "paid" ? d.paid : !d.paid)) &&
+    (typeFilter === "all" || d.type === typeFilter)
+  );
 
   $("paymentList").innerHTML = ds.map(d => `
     <div class="card">
@@ -686,7 +694,11 @@ async function updateShipping(id) {
 
 function renderShipping() {
   const filter = $("shippingFilter").value;
-  const ds = allDeliveries().filter(d => filter === "all" || (filter === "shipped" ? d.shipped : !d.shipped));
+  const typeFilter = $("shippingTypeFilter").value;
+  const ds = allDeliveries().filter(d =>
+    (filter === "all" || (filter === "shipped" ? d.shipped : !d.shipped)) &&
+    (typeFilter === "all" || d.type === typeFilter)
+  );
 
   $("shippingList").innerHTML = ds.map(d => `
     <div class="card">
@@ -1027,7 +1039,9 @@ document.querySelectorAll("nav button").forEach(button => {
 
 $("search").addEventListener("input", renderOrders);
 $("paymentFilter").addEventListener("change", renderPayments);
+$("paymentTypeFilter").addEventListener("change", renderPayments);
 $("shippingFilter").addEventListener("change", renderShipping);
+$("shippingTypeFilter").addEventListener("change", renderShipping);
 
 $("paymentList").addEventListener("click", event => {
   const button = event.target.closest("[data-payment]");
