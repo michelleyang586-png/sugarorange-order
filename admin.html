@@ -541,14 +541,28 @@ async function updatePayment(id) {
 }
 
 
+function displayBuyer(d) {
+  return d.order.buyer || d.name || "姓名未填";
+}
+
+function displayRecipient(d) {
+  return d.name && d.name !== d.order.buyer ? d.name : "";
+}
+
+function displayPhone(d) {
+  return d.phone || d.order.phone || "電話未填";
+}
+
 function renderPayments() {
   const filter = $("paymentFilter").value;
   const ds = allDeliveries().filter(d => filter === "all" || (filter === "paid" ? d.paid : !d.paid));
 
   $("paymentList").innerHTML = ds.map(d => `
     <div class="card">
-      <h3>${escapeHTML(d.name)}</h3>
+      <h3>訂購人：${escapeHTML(displayBuyer(d))}</h3>
       <p class="muted">
+        電話：${escapeHTML(d.order.phone || displayPhone(d))}
+        ${displayRecipient(d) ? ` · 收件人：${escapeHTML(displayRecipient(d))}` : ""}<br>
         ${escapeHTML(d.order.id)} ·
         ${escapeHTML(d.type)} · ${d.qty} 盒
       </p>
@@ -676,14 +690,15 @@ function renderShipping() {
 
   $("shippingList").innerHTML = ds.map(d => `
     <div class="card">
-      <h3>${escapeHTML(d.name)} · ${d.qty} 盒</h3>
+      <h3>訂購人：${escapeHTML(displayBuyer(d))} · ${d.qty} 盒</h3>
       <p class="muted">
         ${escapeHTML(d.order.id)} ·
         ${escapeHTML(d.type)}
       </p>
       <p>
-        ${escapeHTML(d.phone)}<br>
-        ${escapeHTML(d.address)}
+        訂購電話：${escapeHTML(d.order.phone || displayPhone(d))}<br>
+        ${displayRecipient(d) ? `收件人：${escapeHTML(displayRecipient(d))}<br>` : ""}
+        ${d.type === "宅配" ? `收件電話：${escapeHTML(displayPhone(d))}<br>地址：${escapeHTML(d.address)}` : "自取"}
       </p>
       <p>
         <span class="pill">
