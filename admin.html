@@ -110,15 +110,24 @@ p { line-height: 1.6; }
   const ADMIN_LIFF_ID = '2009767596-5QJw6URi';
 
   async function initAdminLine() {
-    await liff.init({ liffId: ADMIN_LIFF_ID });
+  await liff.init({ liffId: ADMIN_LIFF_ID });
 
-    if (!liff.isLoggedIn()) {
-      liff.login();
-      return false;
-    }
-
-    return true;
+  if (!liff.isLoggedIn()) {
+    liff.login();
+    return false;
   }
+
+  return true;
+}
+
+async function getAdminLineUserId() {
+  if (!liff.isLoggedIn()) {
+    throw new Error('請先登入 LINE');
+  }
+
+  const profile = await liff.getProfile();
+  return profile.userId;
+}
 </script>
 </head>
 
