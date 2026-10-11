@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>餘有榮焉｜訂單管理</title>
+<title>餘有榮焉｜後台訂單管理平台</title>
 <style>
 * { box-sizing: border-box; }
 body {
@@ -85,6 +85,21 @@ p { line-height: 1.6; }
   border-radius: 20px;
   font-size: 12px;
 }
+
+/* 狀態顏色：待處理暖橘、已完成柔和綠；文字搭配底色提升辨識度 */
+.pill.status-pending {
+  background: #FFF0DB;
+  color: #955000;
+  border: 1px solid #F2C68B;
+  font-weight: 700;
+}
+.pill.status-done {
+  background: #E3F2E7;
+  color: #24643C;
+  border: 1px solid #B1D8BD;
+  font-weight: 700;
+}
+
 .hide { display: none; }
 .notice {
   background: #fff3df;
@@ -143,7 +158,7 @@ async function getAdminLineUserId() {
 
 <body>
 <header>
-  <div class="brand-layout"><h1 class="brand-title">餘有榮焉 🍊 後台管理系統</h1></div>
+  <div class="brand-layout"><h1 class="brand-title">餘有榮焉 🍊 訂單進銷存管理系統</h1></div>
 </header>
 
 <main>
@@ -476,10 +491,10 @@ function orderCard(order, visibleDeliveries) {
       ${visibleDeliveries.map(d=>`
         <div class="delivery">
           <div class="row"><strong>${escapeHTML(d.type)} · ${d.qty} 盒</strong>
-            <span class="pill">${d.shipped ? (d.type==='自取'?'已交貨':'已出貨') : (d.type==='自取'?'未交貨':'未出貨')}</span></div>
+            <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type==='自取'?'已交貨':'已出貨') : (d.type==='自取'?'未交貨':'未出貨')}</span></div>
           ${d.type==='宅配' ? `<p>收件人：${escapeHTML(d.name || order.buyer)}<br>收件電話：${escapeHTML(d.phone || order.phone)}<br>地址：${escapeHTML(d.address)}</p>` : `<p>取貨人：${escapeHTML(order.buyer)}<br>電話：${escapeHTML(order.phone)}</p>`}
           <p>應收：<strong>${money(deliveryTotal(d))}</strong>（含運費 ${money(d.shipping)}）</p>
-          <p><span class="pill">${d.paid?'已收款':'未收款'}</span></p>
+          <p><span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid?'已收款':'未收款'}</span></p>
           <div class="no-print">
             <label>預計出貨／自取日期</label>
             <input type="date" value="${escapeHTML(d.shipDate)}" data-shipdate="${escapeHTML(d.id)}" ${d.shipped?'disabled':''}>
@@ -534,8 +549,8 @@ async function updatePayment(id) {
   }
 
   const question = d.paid
-    ? "確定取消這筆收款確認？"
-    : "確定已收到這筆配送的全額款項？";
+    ? "確定 取消 這筆收款確認？"
+    : "確定 已收到 這筆配送的全額款項？";
 
   if (!confirm(question)) return;
 
@@ -607,7 +622,7 @@ function renderPayments() {
         <strong>${money(deliveryTotal(d))}</strong>
       </p>
       <p>
-        <span class="pill">
+        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">
           ${d.paid ? "已收款" : "待收款"}
         </span>
       </p>
@@ -689,8 +704,8 @@ async function updateShipping(id) {
 
   if (!confirm(
     shipped
-      ? "確定這筆配送已經出貨？"
-      : "確定取消已出貨標記？"
+      ? "確定這筆配送 已經出貨？"
+      : "確定 取消 已出貨標記？"
   )) return;
 
   try {
@@ -859,10 +874,10 @@ function renderShipping() {
         ${d.type === "宅配" ? `收件電話：${escapeHTML(displayPhone(d))}<br>地址：${escapeHTML(d.address)}` : "自取"}
       </p>
       <p>
-        <span class="pill">
+        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">
           ${d.paid ? "已收款" : "待收款"}
         </span>
-        <span class="pill">
+        <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">
           ${d.shipped ? "已出貨" : "待出貨"}
         </span>
       </p>
