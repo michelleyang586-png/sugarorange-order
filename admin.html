@@ -560,17 +560,15 @@ function renderPayments() {
           ${d.paid ? "已收款" : "待收款"}
         </span>
       </p>
-      <button
-        class="${d.paid ? "secondary" : "primary"}"
-        data-payment="${escapeHTML(d.id)}">
-        ${d.paid ? "取消收款確認" : "確認全額收款"}
-      </button>
       <div class="actions" style="margin-top:10px">
+        <button class="${d.paid ? "secondary" : "primary"}" data-payment="${escapeHTML(d.id)}">
+          ${d.paid ? "取消收款確認" : "確認全額收款"}
+        </button>
         <button class="${d.shipped ? "secondary" : "primary"}" data-shipped="${escapeHTML(d.id)}">
           ${d.shipped ? (d.type === "自取" ? "取消已交貨" : "取消已出貨") : (d.type === "自取" ? "確認已交貨" : "確認已出貨")}
         </button>
-        ${d.type === "自取" && !d.paid && !d.shipped ? `<button class="primary" data-pickup-complete="${escapeHTML(d.id)}">收款＋交貨一次完成</button>` : ""}
       </div>
+      ${d.type === "自取" && !d.paid && !d.shipped ? `<button class="primary" data-pickup-complete="${escapeHTML(d.id)}" style="margin-top:8px;width:100%">收款＋交貨一次完成</button>` : ""}
     </div>
   `).join("");
 }
@@ -683,7 +681,8 @@ async function updateShipping(id) {
 async function completePickup(id, button) {
   const d = findDelivery(id);
   if (!d || d.type !== "自取" || d.paid || d.shipped) return;
-  if (!confirm(`確定「${displayBuyer(d)}」已現場全額付款並領取 ${d.qty} 盒？\n應收：${money(deliveryTotal(d))}`)) return;
+  const buyerName = orders.find(o => o.deliveries.some(item => item.id === id))?.buyer || d.name || "姓名未填";
+  if (!confirm(`確定「${buyerName}」已現場全額付款並領取 ${d.qty} 盒？\n應收：${money(deliveryTotal(d))}`)) return;
   button.disabled = true;
   let completed = 0;
   try {
@@ -761,14 +760,14 @@ function renderShipping() {
           data-shipdate="${escapeHTML(d.id)}"
           ${d.shipped ? "disabled" : ""}>
         <p></p>
-        <button
-          class="${d.shipped ? "secondary" : "primary"}"
-          data-shipped="${escapeHTML(d.id)}">
-          ${d.shipped ? (d.type === "自取" ? "取消已交貨" : "取消出貨標記") : (d.type === "自取" ? "確認已交貨" : "確認已出貨")}
-        </button>
-        <button class="${d.paid ? "secondary" : "primary"}" data-payment="${escapeHTML(d.id)}" style="margin-top:8px;width:100%">
-          ${d.paid ? "取消收款確認" : "確認全額收款"}
-        </button>
+        <div class="actions" style="margin-top:10px">
+          <button class="${d.paid ? "secondary" : "primary"}" data-payment="${escapeHTML(d.id)}">
+            ${d.paid ? "取消收款確認" : "確認全額收款"}
+          </button>
+          <button class="${d.shipped ? "secondary" : "primary"}" data-shipped="${escapeHTML(d.id)}">
+            ${d.shipped ? (d.type === "自取" ? "取消已交貨" : "取消已出貨") : (d.type === "自取" ? "確認已交貨" : "確認已出貨")}
+          </button>
+        </div>
         ${d.type === "自取" && !d.paid && !d.shipped ? `<button class="primary" data-pickup-complete="${escapeHTML(d.id)}" style="margin-top:8px;width:100%">收款＋交貨一次完成</button>` : ""}
       </div>
     </div>
