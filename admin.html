@@ -79,11 +79,23 @@ p { line-height: 1.6; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .actions button { flex: 1; }
 .pill {
-  display: inline-block;
-  background: #f8eadc;
-  padding: 5px 9px;
-  border-radius: 20px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 86px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .status-line { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:10px 0; }
@@ -92,13 +104,13 @@ p { line-height: 1.6; }
   background: #FFF0DB;
   color: #955000;
   border: 1px solid #F2C68B;
-  font-weight: 700;
+  font-weight: 600;
 }
 .pill.status-done {
   background: #E3F2E7;
   color: #24643C;
   border: 1px solid #B1D8BD;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hide { display: none; }
