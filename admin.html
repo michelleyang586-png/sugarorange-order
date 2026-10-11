@@ -19,8 +19,11 @@ header {
   padding: 20px 16px;
   text-align: center;
 }
-header h1 { margin: 0; font-size: 23px; }
-header p { margin: 7px 0 0; font-size: 13px; }
+header .brand-layout { position: relative; max-width: 800px; margin: auto; min-height: 82px; }
+header .brand-tagline { position: absolute; top: 3px; left: 20%; margin: 0; font-size: clamp(14px, 3vw, 20px); font-weight: 400; white-space: nowrap; }
+header .brand-title { position: absolute; left: 50%; top: 39px; transform: translateX(-50%); margin: 0; font-size: clamp(23px, 5vw, 32px); font-weight: 700; white-space: nowrap; line-height: 1.2; }
+header .brand-orange { position: absolute; left: calc(100% + 8px); top: 0; font-size: .75em; }
+@media (max-width: 420px) { header .brand-tagline { left: 7%; } header .brand-title { top: 38px; } }
 main { max-width: 800px; margin: auto; padding: 14px; }
 nav {
   display: grid;
@@ -135,8 +138,10 @@ async function getAdminLineUserId() {
 
 <body>
 <header>
-  <h1>🍊 餘有榮焉</h1>
-  <p>今天的陽光，成就今天的甜。</p>
+  <div class="brand-layout">
+    <p class="brand-tagline">每一次分享，都</p>
+    <h1 class="brand-title">餘有榮焉<span class="brand-orange" aria-label="橘子">🍊</span></h1>
+  </div>
 </header>
 
 <main>
@@ -194,7 +199,7 @@ async function getAdminLineUserId() {
   <section id="shipping" class="hide">
     <div class="row">
       <h2>出貨管理</h2>
-      <button class="secondary" onclick="window.print()">列印</button>
+      <button class="secondary" type="button" onclick="printShippingList()">列印／儲存列印版</button>
     </div>
     <label for="shippingFilter">出貨狀態</label>
     <select id="shippingFilter"><option value="all">全部</option><option value="pending" selected>未出貨</option><option value="shipped">已出貨</option></select>
@@ -722,6 +727,61 @@ async function completePickup(id, button) {
   } finally {
     button.disabled = false;
   }
+}
+
+function printShippingList() {
+  // 依照出貨頁目前的篩選條件輸出，不含後台操作按鈕與登入資料。
+  const filter = $("shippingFilter").value;
+  const typeFilter = $("shippingTypeFilter").value;
+  const ds = allDeliveries().filter(d =>
+    (filter === "all" || (filter === "shipped" ? d.shipped : !d.shipped)) &&
+    (typeFilter === "all" || d.type === typeFilter)
+  );
+  const rows = ds.map((d, i) => `<tr>
+    <td>${i + 1}</td>
+    <td>${escapeHTML(d.order.id)}</td>
+    <td>${escapeHTML(displayBuyer(d))}</td>
+    <td>${escapeHTML(d.order.phone || displayPhone(d))}</td>
+    <td>${escapeHTML(d.type)}</td>
+    <td>${escapeHTML(displayRecipient(d) || "—")}</td>
+    <td>${escapeHTML(displayPhone(d) || "—")}</td>
+    <td>${escapeHTML(d.address || (d.type === "自取" ? "自取" : "—"))}</td>
+    <td>${Number(d.qty) || 0}</td>
+    <td>${escapeHTML(d.shipDate || "—")}</td>
+    <td>${d.paid ? "已收款" : "未收款"}／${d.shipped ? "已出貨" : "未出貨"}</td>
+  </tr>`).join("");
+  const html = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>餘有榮焉－出貨列印表</title><style>
+    body{font-family:Arial,"Microsoft JhengHei",sans-serif;color:#333;padding:16px}
+    h1{text-align:center;font-size:22px}p{text-align:center;font-size:13px}
+    table{width:100%;border-collapse:collapse;font-size:11px;table-layout:auto}
+    th,td{border:1px solid #bbb;padding:6px;word-break:break-word;vertical-align:top}
+    th{background:#f4eee8}thead{display:table-header-group}
+    tr{break-inside:avoid} .toolbar{margin-bottom:16px;text-align:center}
+    button{padding:10px 16px;margin:4px;border:0;border-radius:6px;background:#d97836;color:white}
+    @page{size:A4 landscape;margin:10mm}
+    @media print{.toolbar{display:none}body{padding:0}}
+    </style></head><body>
+    <div class="toolbar"><button onclick="window.print()">列印／另存 PDF</button>
+    <span>若在 LINE 中無法列印，請以 Safari／Chrome 開啟此檔案。</span></div>
+    <h1>餘有榮焉｜出貨清單</h1>
+    <p>出貨狀態：${escapeHTML($("shippingFilter").selectedOptions[0].textContent)}　
+    配送方式：${escapeHTML($("shippingTypeFilter").selectedOptions[0].textContent)}　
+    共 ${ds.length} 筆</p>
+    <table><thead><tr><th>序</th><th>訂單編號</th><th>訂購人</th><th>訂購電話</th><th>方式</th><th>收件人</th><th>收件電話</th><th>地址</th><th>盒數</th><th>預計日期</th><th>狀態</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="11">目前篩選條件下沒有出貨資料</td></tr>'}</tbody></table>
+    </body></html>`;
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "餘有榮焉_出貨列印表_" + new Date().toISOString().slice(0,10) + ".html";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  alert("已嘗試下載出貨列印版。請從瀏覽器下載項目開啟檔案，再按「列印／另存 PDF」。若 LINE 內建瀏覽器不支援下載，請改用 Safari 或 Chrome 開啟後台。列印版含客戶個資，請妥善保管。");
 }
 
 function renderShipping() {
