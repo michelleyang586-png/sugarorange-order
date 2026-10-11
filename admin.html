@@ -19,11 +19,9 @@ header {
   padding: 20px 16px;
   text-align: center;
 }
-header .brand-layout { position: relative; max-width: 800px; margin: auto; min-height: 82px; }
-header .brand-tagline { position: absolute; top: 3px; left: 20%; margin: 0; font-size: clamp(14px, 3vw, 20px); font-weight: 400; white-space: nowrap; }
-header .brand-title { position: absolute; left: 50%; top: 39px; transform: translateX(-50%); margin: 0; font-size: clamp(23px, 5vw, 32px); font-weight: 700; white-space: nowrap; line-height: 1.2; }
-header .brand-orange { position: absolute; left: calc(100% + 8px); top: 0; font-size: .75em; }
-@media (max-width: 420px) { header .brand-tagline { left: 7%; } header .brand-title { top: 38px; } }
+header .brand-layout { display:flex; align-items:center; justify-content:center; min-height:36px; }
+header .brand-title { margin:0; font-size:clamp(16px,4.3vw,26px); font-weight:700; line-height:1.35; white-space:nowrap; }
+@media(max-width:380px){header{padding:17px 8px}header .brand-title{font-size:16px}}
 main { max-width: 800px; margin: auto; padding: 14px; }
 nav {
   display: grid;
@@ -104,6 +102,13 @@ p { line-height: 1.6; }
 .total { font-size: 22px; color: #c8692c; font-weight: bold; }
 /* 篩選條件與下方訂單卡片保持舒適間距 */
 #orderList, #paymentList, #shippingList { margin-top: 24px; }
+.dashboard-title { margin:16px 0 10px; font-size:18px; }
+.dashboard-title small { font-size:12px; font-weight:400; color:#777; margin-left:8px; }
+.dashboard-grid { margin-bottom:16px; }
+.dashboard-tile { width:100%; cursor:pointer; font-family:inherit; color:inherit; border:1px solid #eee; }
+.dashboard-tile small { display:block; color:#888; font-size:11px; margin-top:6px; }
+.dashboard-tile:focus-visible { outline:3px solid #d97836; }
+.dashboard-hint { background:#fff3df; padding:10px 12px; border-radius:9px; margin-bottom:12px; font-size:13px; }
 @media print {
   header, nav, button, .notice, .no-print { display: none !important; }
   body { background: white; }
@@ -138,10 +143,7 @@ async function getAdminLineUserId() {
 
 <body>
 <header>
-  <div class="brand-layout">
-    <p class="brand-tagline">每一次分享，都</p>
-    <h1 class="brand-title">餘有榮焉<span class="brand-orange" aria-label="橘子">🍊</span></h1>
-  </div>
+  <div class="brand-layout"><h1 class="brand-title">餘有榮焉 🍊 後台管理系統</h1></div>
 </header>
 
 <main>
@@ -151,24 +153,14 @@ async function getAdminLineUserId() {
   請確認資料正確後再送出。
 </div>
 
-  <div class="grid">
-    <div class="card summary">
-      <strong id="orderCount">0</strong>
-      <span>訂單數</span>
-    </div>
-    <div class="card summary">
-      <strong id="boxCount">0</strong>
-      <span>訂購盒數</span>
-    </div>
-    <div class="card summary">
-      <strong id="unpaidCount">0</strong>
-      <span>待收款配送</span>
-    </div>
-    <div class="card summary">
-      <strong id="pendingCount">0</strong>
-      <span>待出貨配送</span>
-    </div>
+  <h2 class="dashboard-title">今日營運總覽 <small id="dashboardDate"></small></h2>
+  <div class="grid dashboard-grid">
+    <button type="button" class="card summary dashboard-tile" data-dashboard="new"><strong id="todayNewCount">0</strong><span>今日新增訂單</span><small>今天建立的訂單</small></button>
+    <button type="button" class="card summary dashboard-tile" data-dashboard="ship"><strong id="todayShipCount">0</strong><span>今日預計出貨</span><small id="todayShipDetail">0 筆配送 · 0 盒</small></button>
+    <button type="button" class="card summary dashboard-tile" data-dashboard="pickup"><strong id="todayPickupCount">0</strong><span>今日預計自取</span><small id="todayPickupDetail">0 筆配送 · 0 盒</small></button>
+    <button type="button" class="card summary dashboard-tile" data-dashboard="unpaid"><strong id="todayUnpaidCount">0</strong><span>目前待收款</span><small>不限訂單建立日期</small></button>
   </div>
+  <div id="dashboardHint" class="dashboard-hint hide"></div>
 
   <nav>
     <button class="active" data-page="orders">訂單</button>
@@ -409,17 +401,69 @@ function allDeliveries() {
   );
 }
 
-function renderSummary() {
-  const ds = allDeliveries();
-  $("orderCount").textContent = orders.length;
-  $("boxCount").textContent =
-    ds.reduce((sum, d) => sum + d.qty, 0);
-  $("unpaidCount").textContent =
-    ds.filter(d => !d.paid).length;
-  $("pendingCount").textContent =
-    ds.filter(d => !d.shipped).length;
+function taiwanToday() {
+  return new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 }
-
+function normalizedDate(value) {
+  if (!value) return '';
+  const str = String(value).trim();
+  const match = str.match(/^(\d{4})[-\/]([01]?\d)[-\/]([0-3]?\d)/);
+  if (match) return `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`;
+  return '';
+}
+function todayDashboardData() {
+  const today = taiwanToday();
+  const ds = allDeliveries();
+  const ship = ds.filter(d=>d.type==='宅配' && !d.shipped && normalizedDate(d.shipDate)===today);
+  const pickup = ds.filter(d=>d.type==='自取' && !d.shipped && normalizedDate(d.shipDate)===today);
+  return {today, newly:orders.filter(o=>normalizedDate(o.createdAt)===today),ship,pickup,unpaid:ds.filter(d=>!d.paid)};
+}
+function renderSummary() {
+  const data=todayDashboardData();
+  $('dashboardDate').textContent=data.today;
+  $('todayNewCount').textContent=data.newly.length+' 筆';
+  $('todayShipCount').textContent=data.ship.length+' 筆';
+  $('todayPickupCount').textContent=data.pickup.length+' 筆';
+  $('todayUnpaidCount').textContent=data.unpaid.length+' 筆';
+  $('todayShipDetail').textContent=data.ship.length+' 筆配送 · '+data.ship.reduce((n,d)=>n+d.qty,0)+' 盒';
+  $('todayPickupDetail').textContent=data.pickup.length+' 筆配送 · '+data.pickup.reduce((n,d)=>n+d.qty,0)+' 盒';
+}
+function openDashboardCategory(category) {
+  const data=todayDashboardData();
+  const hint=$('dashboardHint');
+  const q=$('search');
+  q.value='';
+  if(category==='new') {
+    switchPage('orders');
+    $('orderStatusFilter').value='all';
+    $('orderTypeFilter').value='all';
+    dashboardSelectedOrderIds=new Set(data.newly.map(o=>o.id));
+    dashboardSelectedDeliveryIds=null;
+    hint.textContent='目前顯示今天新增的訂單。清除搜尋或更改篩選條件即可返回一般訂單清單。';
+  } else if(category==='unpaid') {
+    switchPage('payments');
+    $('paymentFilter').value='unpaid';
+    $('paymentTypeFilter').value='all';
+    dashboardSelectedOrderIds=null;dashboardSelectedDeliveryIds=null;
+    hint.textContent='已切換至所有待收款配送。';
+  } else {
+    switchPage('orders');
+    $('orderStatusFilter').value='all';
+    $('orderTypeFilter').value=category==='ship'?'宅配':'自取';
+    dashboardSelectedOrderIds=null;
+    dashboardSelectedDeliveryIds=new Set((category==='ship'?data.ship:data.pickup).map(d=>d.id));
+    hint.textContent=category==='ship'?'目前顯示今天預計出貨、尚未完成的配送。':'目前顯示今天預計自取、尚未交貨的配送。';
+  }
+  hint.classList.remove('hide');
+  renderOrders();renderPayments();
+  document.querySelector('nav').scrollIntoView({behavior:'smooth',block:'start'});
+}
+let dashboardSelectedOrderIds=null;
+let dashboardSelectedDeliveryIds=null;
+function clearDashboardSelection() {
+  dashboardSelectedOrderIds=null;dashboardSelectedDeliveryIds=null;
+  $('dashboardHint').classList.add('hide');
+}
 // 訂單管理以每一筆配送為單位篩選與操作，避免多地址訂單誤操作。
 function orderCard(order, visibleDeliveries) {
   const boxes = order.deliveries.reduce((sum,d)=>sum+d.qty,0);
@@ -457,6 +501,8 @@ function renderOrders() {
   const type = $('orderTypeFilter').value;
   const cards = orders.map(order => {
     const visible = order.deliveries.filter(d => {
+      if(dashboardSelectedOrderIds && !dashboardSelectedOrderIds.has(order.id)) return false;
+      if(dashboardSelectedDeliveryIds && !dashboardSelectedDeliveryIds.has(d.id)) return false;
       const matchesType = type==='all'||d.type===type;
       const completed = d.paid && d.shipped;
       const matchesStatus = status==='all'||(status==='completed'?completed:!completed);
@@ -730,6 +776,7 @@ async function completePickup(id, button) {
 }
 
 function printShippingList() {
+  const printWindow = window.open("", "_blank");
   // 依照出貨頁目前的篩選條件輸出，不含後台操作按鈕與登入資料。
   const filter = $("shippingFilter").value;
   const typeFilter = $("shippingTypeFilter").value;
@@ -772,16 +819,23 @@ function printShippingList() {
     <table><thead><tr><th>序</th><th>訂單編號</th><th>訂購人</th><th>訂購電話</th><th>方式</th><th>收件人</th><th>收件電話</th><th>地址</th><th>盒數</th><th>預計日期</th><th>狀態</th></tr></thead>
     <tbody>${rows || '<tr><td colspan="11">目前篩選條件下沒有出貨資料</td></tr>'}</tbody></table>
     </body></html>`;
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  if (printWindow && !printWindow.closed) {
+    try {
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      return;
+    } catch(error) { try {printWindow.close();}catch(e){} }
+  }
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
-  a.download = "餘有榮焉_出貨列印表_" + new Date().toISOString().slice(0,10) + ".html";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
-  alert("已嘗試下載出貨列印版。請從瀏覽器下載項目開啟檔案，再按「列印／另存 PDF」。若 LINE 內建瀏覽器不支援下載，請改用 Safari 或 Chrome 開啟後台。列印版含客戶個資，請妥善保管。");
+  a.download = '餘有榮焉_出貨列印表_' + taiwanToday() + '.html';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  alert('已嘗試下載列印版。若 LINE 內無法開啟，請使用 Safari 或 Chrome。列印資料包含個資，請妥善保管。');
 }
 
 function renderShipping() {
@@ -1081,6 +1135,7 @@ orders = (data.orders || []).map(row => {
 
   return {
     id: row[0] || '',
+    createdAt: row[1] || '',
     buyer: row[5] || '',
     phone: row[6] || '',
     note: row[16] || '',
@@ -1119,7 +1174,7 @@ function switchPage(page) {
     $(id).classList.toggle("hide", id !== page);
   });
 
-  document.querySelectorAll("nav button").forEach(button => {
+document.querySelectorAll("nav button").forEach(button => {
     button.classList.toggle(
       "active",
       button.dataset.page === page
@@ -1127,9 +1182,13 @@ function switchPage(page) {
   });
 }
 
+  document.querySelectorAll('[data-dashboard]').forEach(button=>button.addEventListener('click',()=>openDashboardCategory(button.dataset.dashboard)));
+['search','orderStatusFilter','orderTypeFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',clearDashboardSelection));
 document.querySelectorAll("nav button").forEach(button => {
   button.addEventListener("click", () => {
+    clearDashboardSelection();
     switchPage(button.dataset.page);
+    renderOrders();
   });
 });
 
@@ -1209,6 +1268,7 @@ estimate();
 
     orders = (data.orders || []).map(row => ({
       id: row[0] || '',
+      createdAt: row[1] || '',
       buyer: row[5] || '',
       phone: row[6] || '',
       note: row[16] || '',
