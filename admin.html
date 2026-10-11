@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>餘有榮焉｜後台訂單管理平台</title>
+<title>餘有榮焉｜訂單管理</title>
 <style>
 * { box-sizing: border-box; }
 body {
@@ -86,6 +86,7 @@ p { line-height: 1.6; }
   font-size: 12px;
 }
 
+.status-line { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:10px 0; }
 /* 狀態顏色：待處理暖橘、已完成柔和綠；文字搭配底色提升辨識度 */
 .pill.status-pending {
   background: #FFF0DB;
@@ -158,7 +159,7 @@ async function getAdminLineUserId() {
 
 <body>
 <header>
-  <div class="brand-layout"><h1 class="brand-title">餘有榮焉 🍊 訂單進銷存管理系統</h1></div>
+  <div class="brand-layout"><h1 class="brand-title">餘有榮焉 🍊 後台管理系統</h1></div>
 </header>
 
 <main>
@@ -490,11 +491,13 @@ function orderCard(order, visibleDeliveries) {
       <p>整筆訂單：${boxes} 盒 · <strong>${money(total)}</strong></p>
       ${visibleDeliveries.map(d=>`
         <div class="delivery">
-          <div class="row"><strong>${escapeHTML(d.type)} · ${d.qty} 盒</strong>
-            <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type==='自取'?'已交貨':'已出貨') : (d.type==='自取'?'未交貨':'未出貨')}</span></div>
+          <div class="row"><strong>${escapeHTML(d.type)} · ${d.qty} 盒</strong></div>
           ${d.type==='宅配' ? `<p>收件人：${escapeHTML(d.name || order.buyer)}<br>收件電話：${escapeHTML(d.phone || order.phone)}<br>地址：${escapeHTML(d.address)}</p>` : `<p>取貨人：${escapeHTML(order.buyer)}<br>電話：${escapeHTML(order.phone)}</p>`}
           <p>應收：<strong>${money(deliveryTotal(d))}</strong>（含運費 ${money(d.shipping)}）</p>
-          <p><span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid?'已收款':'未收款'}</span></p>
+          <div class="status-line">
+            <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid?'已收款':'待收款'}</span>
+            <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type==='自取'?'已交貨':'已出貨') : (d.type==='自取'?'待交貨':'待出貨')}</span>
+          </div>
           <div class="no-print">
             <label>預計出貨／自取日期</label>
             <input type="date" value="${escapeHTML(d.shipDate)}" data-shipdate="${escapeHTML(d.id)}" ${d.shipped?'disabled':''}>
@@ -549,8 +552,8 @@ async function updatePayment(id) {
   }
 
   const question = d.paid
-    ? "確定 取消 這筆收款確認？"
-    : "確定 已收到 這筆配送的全額款項？";
+    ? "確定取消這筆收款確認？"
+    : "確定已收到這筆配送的全額款項？";
 
   if (!confirm(question)) return;
 
@@ -621,11 +624,10 @@ function renderPayments() {
         應收金額：
         <strong>${money(deliveryTotal(d))}</strong>
       </p>
-      <p>
-        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">
-          ${d.paid ? "已收款" : "待收款"}
-        </span>
-      </p>
+      <div class="status-line">
+        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid ? "已收款" : "待收款"}</span>
+        <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type === "自取" ? "已交貨" : "已出貨") : (d.type === "自取" ? "待交貨" : "待出貨")}</span>
+      </div>
       <div class="actions" style="margin-top:10px">
         <button class="${d.paid ? "secondary" : "primary"}" data-payment="${escapeHTML(d.id)}">
           ${d.paid ? "取消收款確認" : "確認全額收款"}
@@ -704,8 +706,8 @@ async function updateShipping(id) {
 
   if (!confirm(
     shipped
-      ? "確定這筆配送 已經出貨？"
-      : "確定 取消 已出貨標記？"
+      ? "確定這筆配送已經出貨？"
+      : "確定取消已出貨標記？"
   )) return;
 
   try {
@@ -791,7 +793,7 @@ async function completePickup(id, button) {
 }
 
 function printShippingList() {
-  const printWindow = window.open("", "_blank");
+  // 在後台直接顯示列印預覽，避免 LINE WebView 封鎖彈出視窗。
   // 依照出貨頁目前的篩選條件輸出，不含後台操作按鈕與登入資料。
   const filter = $("shippingFilter").value;
   const typeFilter = $("shippingTypeFilter").value;
@@ -834,23 +836,41 @@ function printShippingList() {
     <table><thead><tr><th>序</th><th>訂單編號</th><th>訂購人</th><th>訂購電話</th><th>方式</th><th>收件人</th><th>收件電話</th><th>地址</th><th>盒數</th><th>預計日期</th><th>狀態</th></tr></thead>
     <tbody>${rows || '<tr><td colspan="11">目前篩選條件下沒有出貨資料</td></tr>'}</tbody></table>
     </body></html>`;
-  if (printWindow && !printWindow.closed) {
-    try {
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      return;
-    } catch(error) { try {printWindow.close();}catch(e){} }
+  // 不依賴 window.open 或自動下載：點擊後一定先顯示可見的預覽介面。
+  let panel = document.getElementById('printPreviewPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'printPreviewPanel';
+    panel.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#f7f5f0;display:flex;flex-direction:column;';
+    panel.innerHTML = `<div style="padding:10px;background:#fff;border-bottom:1px solid #ddd;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <strong style="margin-right:auto">出貨清單預覽</strong>
+      <button type="button" class="primary" id="previewPrint">列印／存 PDF</button>
+      <button type="button" class="secondary" id="previewDownload">下載 HTML</button>
+      <button type="button" class="secondary" id="previewClose">關閉</button>
+      </div>
+      <p style="margin:6px 12px;font-size:12px;color:#666">若 LINE 無法叫出列印視窗，請按「下載 HTML」，用 Safari／Chrome 開啟後列印。含客戶個資，請妥善保管。</p>
+      <iframe title="出貨清單預覽" id="printPreviewFrame" style="width:100%;flex:1;border:0;background:white"></iframe>`;
+    document.body.appendChild(panel);
+    document.getElementById('previewClose').addEventListener('click', () => { panel.style.display='none'; });
   }
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = '餘有榮焉_出貨列印表_' + taiwanToday() + '.html';
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
-  alert('已嘗試下載列印版。若 LINE 內無法開啟，請使用 Safari 或 Chrome。列印資料包含個資，請妥善保管。');
+  panel.style.display = 'flex';
+  const frame = document.getElementById('printPreviewFrame');
+  frame.srcdoc = html;
+  document.getElementById('previewPrint').onclick = () => {
+    try { frame.contentWindow.focus(); frame.contentWindow.print(); }
+    catch(e) { alert('此瀏覽器不支援直接列印，請按「下載 HTML」，改用 Safari 或 Chrome 開啟。'); }
+  };
+  document.getElementById('previewDownload').onclick = () => {
+    try {
+      const blob = new Blob([html], { type:'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url;
+      a.download='餘有榮焉_出貨列印表_'+taiwanToday()+'.html';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+    } catch(e) { alert('下載失敗：'+e.message+'。請改用 Safari 或 Chrome 開啟後台。'); }
+  };
 }
 
 function renderShipping() {
@@ -873,14 +893,10 @@ function renderShipping() {
         ${displayRecipient(d) ? `收件人：${escapeHTML(displayRecipient(d))}<br>` : ""}
         ${d.type === "宅配" ? `收件電話：${escapeHTML(displayPhone(d))}<br>地址：${escapeHTML(d.address)}` : "自取"}
       </p>
-      <p>
-        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">
-          ${d.paid ? "已收款" : "待收款"}
-        </span>
-        <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">
-          ${d.shipped ? "已出貨" : "待出貨"}
-        </span>
-      </p>
+      <div class="status-line">
+        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid ? "已收款" : "待收款"}</span>
+        <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type === "自取" ? "已交貨" : "已出貨") : (d.type === "自取" ? "待交貨" : "待出貨")}</span>
+      </div>
       <div class="no-print">
         <label>預計出貨／自取日期</label>
         <input
