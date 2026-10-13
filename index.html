@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>餘有榮焉｜砂糖橘訂購</title>
+  <title>餘有榮焉｜2026砂糖桔預購｜10月12日確認版</title>
   <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <style>
     :root {
@@ -118,10 +118,36 @@
     }
     .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
+    /* 餘有榮焉：溫暖、清楚的手機預購介面 */
+    :root { --main:#F97316; --main-light:#FFF7ED; --main-dark:#EA580C; --bg-color:#FFF7ED; }
+    body { color:#4A403A; background:#FFF7ED; }
+    .header { background:linear-gradient(150deg,#F97316,#FB923C); border-radius:0 0 26px 26px; padding:32px 20px 50px; box-shadow:none; }
+    .header h1 { font-size:28px; letter-spacing:2px; font-weight:700; }
+    .header p { font-size:14px; opacity:.95; }
+    .brand-kicker { color:#FFF7ED; font-size:12px; letter-spacing:2px; margin-bottom:10px; }
+    .container { position:relative; margin:-24px auto 0; }
+    .card { border:1px solid #FFEDD5; border-radius:17px; box-shadow:0 5px 18px rgba(249,115,22,.08); }
+    .card h2 { color:#C2410C; font-size:16px; display:flex; align-items:center; gap:9px; }
+    .step { display:inline-flex; align-items:center; justify-content:center; border-radius:50%; width:26px; height:26px; font-size:11px; color:white; background:#F97316; }
+    .delivery-toggle { background:#FFEDD5; }
+    .delivery-btn { min-height:46px; color:#7C4A2D; }
+    .delivery-btn.active { color:#EA580C; }
+    .spec-name { color:#7C3E18; }
+    .spec-price { color:#EA580C; }
+    .qty-btn { width:40px; height:40px; background:#FFF7ED; font-weight:700; box-shadow:none; }
+    .qty-input { height:40px; }
+    .field label { color:#9A531E; }
+    input[type="text"],input[type="tel"],textarea { background:#FFFCF8; border-color:#FED7AA; }
+    .info-box { color:#9A531E; }
+    .delivery-info { background:#FFF7ED; border:1px solid #FDBA74; }
+    .price-display { background:#F97316; border-radius:16px; }
+    .submit-btn { background:#F97316; box-shadow:0 5px 14px rgba(175,88,46,.18); min-height:56px; }
+    .submit-btn:focus-visible,.delivery-btn:focus-visible,.qty-btn:focus-visible { outline:3px solid #EA580C; outline-offset:2px; }
+    @media(max-width:390px){.card{padding:16px}.spec-header{gap:8px}.qty-control{gap:5px}.spec-name{font-size:14px}.qty-input{width:38px}.header h1{font-size:25px}}
     /* 成功畫面 */
     #success-screen {
       display: none; min-height: 100vh;
-      background: linear-gradient(145deg, #FB923C 0%, #FDE68A 100%);
+      background: linear-gradient(145deg, #F97316 0%, #FB923C 100%);
       padding: 40px 20px; text-align: center;
     }
     .success-icon { font-size: 64px; margin-bottom: 16px; }
@@ -152,30 +178,25 @@
       border-radius: 16px; padding: 16px 40px; font-size: 16px; font-weight: bold;
       cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
-    /* 預購成功確認卡：僅調整成功畫面，不改動下單表單 */
-    #success-screen { background: #FAF7F0; color: #694B3A; padding: 26px 18px 36px; }
-    #success-screen .success-title { color: #694B3A; }
-    #success-screen .success-sub { color: #8C7363; }
-    #success-screen .order-summary-card { max-width: 520px; margin: 0 auto 18px; padding: 24px 20px; }
-    #success-screen .order-summary-card h3 { color: #694B3A; margin: 18px 0 10px; }
-    #success-screen .order-row { gap: 14px; border-color: #F0E7DC; line-height: 1.55; }
-    #success-screen .order-row .label { color: #8C7363; flex-shrink: 0; }
-    #success-screen .order-row .value { color: #694B3A; overflow-wrap: anywhere; max-width: 68%; }
-    #success-screen .order-total-row { color: #694B3A; border-color: #E6D9CA; }
-    #success-screen .order-total-row .value { color: #B66C44; }
-    #success-screen .success-order-id { text-align: center; padding: 4px 0 16px; border-bottom: 1px solid #E6D9CA; }
-    #success-screen .success-id-label { color: #8C7363; font-size: 12px; }
-    #success-screen .success-id-value { color: #B66C44; font-size: clamp(17px, 4.6vw, 23px); font-weight: 800; margin: 8px 0; letter-spacing: .3px; overflow-wrap: anywhere; }
-    #success-screen .success-method { display: inline-block; padding: 5px 14px; border-radius: 99px; background: #F4EADD; color: #875C44; font-size: 12px; }
-    #success-screen .success-detail { background: #F4EADD; border-radius: 14px; padding: 14px; margin-top: 20px; }
-    #success-screen .success-detail h3 { margin: 0 0 9px; }
-    #success-screen .success-detail .order-row { border-color: #E8DCCD; }
-    #success-screen .success-detail-note { font-size: 13px; line-height: 1.7; color: #8C7363; margin: 9px 0 0; }
-    #success-screen .success-payment { margin-top: 18px; text-align: center; }
-    #success-screen .success-payment strong { color: #B66C44; font-size: 17px; }
-    #success-screen .success-payment p { font-size: 13px; color: #694B3A; line-height: 1.8; margin: 9px 0 0; }
-    #success-screen .screenshot-hint { max-width: 520px; margin: 0 auto 20px; background: #F4EADD; border: 1px dashed #DCC7B5; color: #694B3A; }
-    #success-screen .back-btn { color: #B66C44; }
+    /* 10/12 使用者提供版本：成功頁橘色系專屬樣式 */
+    #success-screen { background:linear-gradient(145deg,#F97316 0%,#FB923C 100%); }
+    #success-screen .order-summary-card { max-width:520px; margin:0 auto 18px; padding:24px 20px; }
+    #success-screen .order-row { gap:12px; line-height:1.65; border-color:#FFEDD5; }
+    #success-screen .order-row .label { color:#9A531E; flex-shrink:0; }
+    #success-screen .order-row .value { color:#5D4031; max-width:68%; overflow-wrap:anywhere; }
+    #success-screen .order-total-row { border-color:#FDBA74; color:#7C3E18; }
+    #success-screen .order-total-row .value { color:#EA580C; }
+    #success-screen .success-order-id { text-align:center; padding:4px 0 17px; border-bottom:1px solid #FED7AA; }
+    #success-screen .success-id-label { font-size:12px; color:#9A531E; }
+    #success-screen .success-id-value { font-size:clamp(17px,4.5vw,23px); font-weight:800; color:#EA580C; overflow-wrap:anywhere; margin:8px 0; }
+    #success-screen .success-method { display:inline-block; padding:5px 14px; border-radius:99px; background:#FFEDD5; color:#C2410C; font-size:12px; }
+    #success-screen .success-detail { margin-top:20px; padding:15px; border-radius:13px; background:#FFF7ED; }
+    #success-screen .success-detail h3 { margin:0 0 10px; color:#C2410C; }
+    #success-screen .success-detail p { margin:10px 0 0; color:#9A531E; font-size:13px; line-height:1.8; }
+    #success-screen .success-payment { text-align:center; margin-top:18px; }
+    #success-screen .success-payment strong { color:#EA580C; font-size:18px; }
+    #success-screen .success-payment p { font-size:13px; color:#7C3E18; line-height:1.8; margin-top:9px; }
+    #success-screen .screenshot-hint { max-width:520px; margin:0 auto 20px; }
   </style>
 </head>
 <body>
@@ -183,17 +204,19 @@
 <!-- 訂購主畫面 -->
 <div id="main-screen">
   <div class="header">
-    <h1>餘有榮焉 🍊 砂糖橘</h1>
-    <p>果園產地直送 ‧ 香甜多汁</p>
+    <div class="brand-kicker">苗栗・公館｜產地直送</div>
+    <div style="font-size:11px;color:#fff5eb;margin-bottom:5px;">2026 砂糖桔預購</div>
+    <h1>餘有榮焉 <span aria-hidden="true">🍊</span></h1>
+    <p>砂糖桔・產地預購</p>
   </div>
   <div class="container">
 
     <!-- 取貨方式 -->
     <div class="card">
-      <h2>取貨方式</h2>
+      <h2><span class="step">01</span> 選擇取貨方式</h2>
       <div class="delivery-toggle">
         <button class="delivery-btn active" onclick="setDelivery('自取')" id="btn-pickup">
-          🏪 苗栗公館自取
+          📍 公館自取
         </button>
         <button class="delivery-btn" onclick="setDelivery('宅配')" id="btn-delivery">
           🚛 新竹貨運宅配
@@ -203,12 +226,12 @@
 
     <!-- 規格選擇 -->
     <div class="card">
-      <h2>挑選規格</h2>
+      <h2><span class="step">02</span> 選擇訂購數量</h2>
 
       <div class="spec-card" id="spec-card-0">
         <div class="spec-header">
           <div>
-            <div class="spec-name">🍊 砂糖橘 5斤裝</div>
+            <div class="spec-name">🍊 砂糖桔 5斤裝</div>
             <div class="spec-price">NT$ 400 / 盒</div>
           </div>
           <div class="qty-control">
@@ -220,52 +243,55 @@
       </div>
 
       <p id="empty-warning" style="color:#ff6b6b;font-size:13px;text-align:center;display:none;">
-        別忘了選購好吃的砂糖橘喔！
+        別忘了選購好吃的砂糖桔喔！
       </p>
     </div>
 
     <!-- 收件資訊 -->
     <div class="card">
-      <h2>收件資訊</h2>
+      <h2><span class="step">03</span> 填寫聯絡資料</h2>
       <div class="field" style="margin-bottom:15px;">
-        <label>聯絡姓名</label>
+        <label>聯絡姓名 <span style="color:#B65D36">＊必填</span></label>
         <input type="text" id="name" placeholder="請填寫姓名">
       </div>
       <div class="field" style="margin-bottom:15px;">
-        <label>手機號碼</label>
+        <label>手機號碼 <span style="color:#B65D36">＊必填</span></label>
         <input type="text" id="phone" placeholder="09XX-XXX-XXX" maxlength="12" inputmode="numeric">
       </div>
       <div class="field" id="address-section" style="margin-bottom:15px;display:none;">
-        <label>宅配地址</label>
-        <input type="text" id="address" placeholder="完整收件地址">
+        <label>宅配地址 <span style="color:#B65D36">＊必填</span></label>
+        <input type="text" id="address" placeholder="請填寫郵遞區號、縣市、區鄉鎮、路名與門牌">
       </div>
 
       <div id="pickup-info-section" class="info-box pickup-info">
-        📍 <b>自取地點：</b>苗栗縣公館鄉館東村和東街46號<br>
-        🕐 <b>取貨時間：</b>每日 09:00 – 17:00，請先電話聯絡<br>
-        📞 如需調整取貨時間請提前聯繫，聯絡電話：羅小姐 0972-211755<br>
+        📍 <b>自取地點：</b>苗栗縣公館鄉館東村和東街2鄰46號<br>
+        🕐 <b>自取時間：</b>採預約制，請於收到採收通知後，透過官方 LINE 與我們確認取貨日期及時間。<br>
+        🍊 <b>溫馨提醒：</b>因採收期間忙於果園作業，現場不一定有人員留守。為避免您白跑一趟，請務必事先預約並確認取貨時間，恕不接受未預約直接取貨。<br>
+        📞 <b>聯絡方式：</b>官方 LINE／JJ 0911-936229<br>
       </div>
 
       <div id="delivery-info-section" class="info-box delivery-info" style="display:none;">
         🚛 <b>新竹貨運宅配說明：</b><br>
-        📦 運費以 4 盒為一單位，NT$ 150 / 件<br>
-        💳 請完成匯款後告知，<b style="color:#4A90D9;">依匯款順序出貨</b><br>
-        🕐 出貨後約 1–2 個工作天到貨<br>
-        📞 聯絡電話：羅小姐 0972-211755<br>
+        📦 同一地址每 4 盒（含未滿 4 盒）運費 NT$ 150；5–8 盒 NT$ 300，以此類推。<br>
+        💳 目前無須付款，待採收及供貨確認後，將由官方 LINE 另行通知付款與出貨資訊<br>
+        🕐 出貨後約 1–2 個工作天到貨（實際配送依物流狀況為準）<br>
+        📞 聯絡電話：JJ 0911-936229<br>
       </div>
 
       <div class="field" style="margin-top:15px;">
         <label>備註需求</label>
-        <textarea id="note" rows="2" placeholder="如需指定到貨日期或其他需求請在此填寫"></textarea>
+        <textarea id="note" rows="2" placeholder="如有宅配收件需求或其他事項，請在此告知（實際安排以官方 LINE 確認為準）"></textarea>
       </div>
     </div>
+
+    <p style="font-size:12px;line-height:1.8;color:#80695B;padding:0 5px 12px;">🍊 預購商品為農產品，實際採收與出貨時間將依產季狀況安排，相關通知請留意官方 LINE。</p>
 
     <!-- 金額顯示 -->
     <div class="price-display" id="price-display">
       <div class="price-total"><span>總計金額</span><span>NT$ 0</span></div>
     </div>
     <button class="submit-btn" id="submit-btn" onclick="submitOrder()">
-      確認送出訂單
+      確認送出預購單 →
     </button>
   </div>
 </div>
@@ -274,11 +300,11 @@
 <div id="success-screen">
   <div class="success-icon">🍊</div>
   <div class="success-title">預購登記成功！</div>
-  <div class="success-sub">餘有榮焉｜2026 砂糖橘</div>
+  <div class="success-sub">餘有榮焉｜2026 砂糖桔</div>
   <div class="order-summary-card" id="success-summary"></div>
   <div class="screenshot-hint">
-    <strong>📸 請截圖保存訂單資訊</strong>
-    如有問題請聯繫 JJ：0911-936229
+    <strong>📸 請截圖保存此頁面作為訂購紀錄</strong>
+    如有問題請聯繫：JJ 0911-936229
   </div>
   <button class="back-btn" onclick="location.reload()">繼續訂購</button>
 </div>
@@ -289,7 +315,7 @@
   var PICKUP_ADDRESS = '苗栗縣公館鄉館東村和東街2鄰46號';
 
   var SPECS = [
-    { name: '砂糖橘 5斤裝', price: 400, soldout: false }
+    { name: '砂糖桔 5斤裝', price: 400, soldout: false }
   ];
 
   var qtys = [0];
@@ -391,24 +417,22 @@
     var safe = escapeHtml;
     var isPickup = deliveryType === '自取';
     var subtotal = 0;
-    var items = '';
+    var itemRows = '';
     for (var i = 0; i < SPECS.length; i++) {
       if (SPECS[i].soldout || qtys[i] <= 0) continue;
-      var amount = qtys[i] * SPECS[i].price;
-      subtotal += amount;
-      items += '<div class="order-row"><span class="label">品項</span><span class="value">' + safe(SPECS[i].name) + '</span></div>' +
-        '<div class="order-row"><span class="label">數量</span><span class="value">' + qtys[i] + ' 盒</span></div>';
+      subtotal += qtys[i] * SPECS[i].price;
+      itemRows += '<div class="order-row"><span class="label">品項</span><span class="value">' + safe(SPECS[i].name) + '</span></div>' +
+        '<div class="order-row"><span class="label">訂購數量</span><span class="value">' + qtys[i] + ' 盒</span></div>';
     }
-    var method = isPickup ? '公館自取' : '新竹貨運宅配';
     var locationHtml = isPickup
-      ? '<div class="success-detail"><h3>📍 自取資訊</h3>' +
-        '<div class="order-row"><span class="label">取貨地址</span><span class="value">' + safe(PICKUP_ADDRESS) + '</span></div>' +
-        '<p class="success-detail-note">取貨時間採預約制，將另行聯繫確認。</p></div>'
-      : '<div class="success-detail"><h3>🚛 宅配收件資訊</h3>' +
+      ? '<section class="success-detail"><h3>📍 公館自取資訊</h3>' +
+        '<div class="order-row"><span class="label">自取地點</span><span class="value">' + safe(PICKUP_ADDRESS) + '</span></div>' +
+        '<p>取貨時間採預約制，收到採收通知後請透過官方 LINE 確認。現場不一定有人員，恕不接受未預約直接取貨。</p></section>'
+      : '<section class="success-detail"><h3>🚛 宅配收件資訊</h3>' +
         '<div class="order-row"><span class="label">收件人</span><span class="value">' + safe(name) + '</span></div>' +
         '<div class="order-row"><span class="label">收件電話</span><span class="value">' + safe(phone) + '</span></div>' +
         '<div class="order-row"><span class="label">收件地址</span><span class="value">' + safe(address) + '</span></div>' +
-        '<p class="success-detail-note">依採收與付款確認情況安排出貨。</p></div>';
+        '<p>依採收與付款確認情況安排出貨。</p></section>';
     var noteHtml = note
       ? '<div class="order-row"><span class="label">備註</span><span class="value">' + safe(note) + '</span></div>'
       : '';
@@ -417,18 +441,18 @@
     document.getElementById('success-summary').innerHTML =
       '<div class="success-order-id"><div class="success-id-label">您的訂單編號</div>' +
       '<div class="success-id-value">' + safe(orderId) + '</div>' +
-      '<span class="success-method">' + method + '</span></div>' +
+      '<span class="success-method">' + (isPickup ? '公館自取' : '新竹貨運宅配') + '</span></div>' +
       '<h3>🧾 訂購明細</h3>' +
       '<div class="order-row"><span class="label">訂購人</span><span class="value">' + safe(name) + '</span></div>' +
       '<div class="order-row"><span class="label">聯絡電話</span><span class="value">' + safe(phone) + '</span></div>' +
-      items +
+      itemRows +
       '<div class="order-row"><span class="label">商品金額</span><span class="value">NT$ ' + subtotal.toLocaleString('en-US') + '</span></div>' +
       '<div class="order-row"><span class="label">' + (isPickup ? '自取運費' : '宅配運費') + '</span><span class="value">NT$ ' + Number(shipping).toLocaleString('en-US') + '</span></div>' +
       '<div class="order-total-row"><span>預購總金額</span><span class="value">NT$ ' + Number(totalAmount).toLocaleString('en-US') + '</span></div>' +
       locationHtml + noteHtml +
       '<div class="success-payment"><strong>目前無須付款</strong>' +
-      '<p>我們將依採收與供貨數量確認訂單，並另行通知付款及' + (isPickup ? '取貨' : '出貨') + '資訊。</p></div>';
-    window.scrollTo(0,0);
+      '<p>待採收與供貨數量確認後，我們將另行通知付款及' + (isPickup ? '取貨' : '出貨') + '資訊。</p></div>';
+    window.scrollTo(0, 0);
   }
 
   async function submitOrder() {
@@ -521,7 +545,7 @@
         : (e.message || '送出失敗，請稍後再試');
       alert(msg);
       btn.disabled = false;
-      btn.textContent = '確認送出訂單';
+      btn.textContent = '確認送出預購單 →';
     } finally {
       sending = false;
     }
