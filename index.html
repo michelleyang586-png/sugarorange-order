@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>餘有榮焉｜2026砂糖橘預購｜10月12日確認版</title>
+  <title>餘有榮焉｜2026砂糖橘預購｜10月12日版</title>
   <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <style>
     :root {
@@ -265,7 +265,7 @@
 
     <!-- 收件資訊 -->
     <div class="card">
-      <h2><span class="step">03</span> 填寫聯絡資料</h2>
+      <h2 id="contact-section-title"><span class="step">03</span> 填寫聯絡人資訊</h2>
       <div class="field" style="margin-bottom:15px;">
         <label>聯絡姓名 <span style="color:#B65D36">＊必填</span></label>
         <input type="text" id="name" placeholder="請填寫姓名">
@@ -395,6 +395,7 @@
     document.getElementById('address-section').style.display       = type === '宅配' ? 'block' : 'none';
     document.getElementById('pickup-info-section').style.display   = type === '自取' ? 'block' : 'none';
     document.getElementById('delivery-info-section').style.display = type === '宅配' ? 'block' : 'none';
+    document.getElementById('contact-section-title').innerHTML = '<span class="step">03</span> ' + (type === '宅配' ? '填寫收件人資訊' : '填寫聯絡人資訊');
     updatePriceDisplay();
   }
 
