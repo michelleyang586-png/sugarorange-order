@@ -340,6 +340,7 @@
   var lineUserId = '';
   var lineAccessToken = '';
   var sending = false;
+  var LIFF_ENTRY_URL = 'https://liff.line.me/2009767596-nZiSJohI';
 
   function syncUI(idx) {
     var el = document.getElementById('qty-' + idx);
@@ -423,6 +424,27 @@
       });
       sessionStorage.removeItem('youyu_pending_order');
     } catch (e) { console.warn('恢復訂單失敗', e); }
+  }
+
+  // 不自動重新導向。由客人自行選擇開啟 LINE LIFF 專用入口。
+  function showLineEntryNotice() {
+    var el = document.getElementById('line-entry-notice');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'line-entry-notice';
+      el.setAttribute('role', 'alert');
+      el.style.cssText = 'position:fixed;z-index:9999;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px';
+      el.innerHTML = '<div style="background:#fff;border-radius:18px;padding:24px;max-width:400px;width:100%;line-height:1.8;color:#5D4031">' +
+        '<h3 style="color:#C2410C;margin-bottom:12px">請從 LINE 開啟預購單</h3>' +
+        '<p>為了將訂單確認通知傳送給你，需要先透過 LINE 完成授權。這筆訂單<strong>尚未送出</strong>。</p>' +
+        '<p style="font-size:13px;margin:10px 0">請點下方按鈕，在 LINE 開啟預購頁面。若瀏覽器詢問是否開啟 LINE，請選擇「打開」。</p>' +
+        '<a href="' + LIFF_ENTRY_URL + '" style="display:block;text-align:center;background:#F97316;color:white;padding:12px;border-radius:12px;text-decoration:none;font-weight:bold;margin-top:16px">在 LINE 開啟預購單</a>' +
+        '<button type="button" id="line-entry-close" style="display:block;width:100%;padding:10px;margin-top:10px;background:#FFF7ED;border:0;border-radius:10px;color:#7C3E18">返回目前表單</button>' +
+        '<p style="font-size:12px;color:#999;margin-top:10px">跨瀏覽器開啟時，可能需要重新填寫資料。</p></div>';
+      document.body.appendChild(el);
+      document.getElementById('line-entry-close').addEventListener('click', function() { el.style.display = 'none'; });
+    }
+    el.style.display = 'flex';
   }
 
   function setDelivery(type) {
@@ -557,16 +579,23 @@
 
     sending = true;
     try {
+      if (!lineAccessToken && typeof liff === 'undefined') {
+        showLineEntryNotice();
+        return;
+      }
       if (!lineAccessToken && typeof liff !== 'undefined') {
         if (!liff.isLoggedIn()) {
-          savePendingOrder();
-          // 外部瀏覽器仍可能需要 LINE 授權；從 LIFF 專用網址開啟可減少登入跳轉。
-          liff.login({ redirectUri: window.location.href.split('#')[0] });
+          // 禁止在送出訂單時自動跳轉登入，避免 iOS / 外部瀏覽器重複喚起 LINE。
+          // 顯示明確操作指引，並保留當前頁面的填寫內容。
+          showLineEntryNotice();
           return;
         }
         lineAccessToken = liff.getAccessToken() || '';
       }
-      if (!lineAccessToken) throw new Error('請透過 LINE 開啟訂購頁面並完成登入');
+      if (!lineAccessToken) {
+        showLineEntryNotice();
+        return;
+      }
       var payload = {
         action: 'createOrder',
         buyerName: name,
