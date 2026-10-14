@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>餘有榮焉｜2026砂糖桔預購｜10月12日確認版</title>
+  <title>餘有榮焉｜2026砂糖橘預購｜10月12日確認版</title>
   <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <style>
     :root {
@@ -197,6 +197,9 @@
     #success-screen .success-payment strong { color:#EA580C; font-size:18px; }
     #success-screen .success-payment p { font-size:13px; color:#7C3E18; line-height:1.8; margin-top:9px; }
     #success-screen .screenshot-hint { max-width:520px; margin:0 auto 20px; }
+  
+    .header .header-subtitle { font-size:14px; margin-top:9px; font-weight:600; }
+    .header-description { max-width:430px; margin:15px auto 0; font-size:13px; line-height:1.8; color:#FFF5EB; }
   </style>
 </head>
 <body>
@@ -204,10 +207,10 @@
 <!-- 訂購主畫面 -->
 <div id="main-screen">
   <div class="header">
-    <div class="brand-kicker">苗栗・公館｜產地直送</div>
-    <div style="font-size:11px;color:#fff5eb;margin-bottom:5px;">2026 砂糖桔預購</div>
-    <h1>餘有榮焉 <span aria-hidden="true">🍊</span></h1>
-    <p>砂糖桔・產地預購</p>
+    <div class="brand-kicker">餘有榮焉 <span aria-hidden="true">🍊</span></div>
+    <h1>2026 砂糖橘預購登記</h1>
+    <p class="header-subtitle">苗栗公館｜產地直送</p>
+    <div class="header-description">每盒 5 台斤・NT$400<br>現在預購無須付款，待果實成熟並確認供貨後，另行通知付款與取貨／出貨安排。</div>
   </div>
   <div class="container">
 
@@ -231,7 +234,7 @@
       <div class="spec-card" id="spec-card-0">
         <div class="spec-header">
           <div>
-            <div class="spec-name">🍊 砂糖桔 5斤裝</div>
+            <div class="spec-name">🍊 砂糖橘 5斤裝</div>
             <div class="spec-price">NT$ 400 / 盒</div>
           </div>
           <div class="qty-control">
@@ -243,7 +246,7 @@
       </div>
 
       <p id="empty-warning" style="color:#ff6b6b;font-size:13px;text-align:center;display:none;">
-        別忘了選購好吃的砂糖桔喔！
+        別忘了選購好吃的砂糖橘喔！
       </p>
     </div>
 
@@ -300,7 +303,7 @@
 <div id="success-screen">
   <div class="success-icon">🍊</div>
   <div class="success-title">預購登記成功！</div>
-  <div class="success-sub">餘有榮焉｜2026 砂糖桔</div>
+  <div class="success-sub">餘有榮焉｜2026 砂糖橘</div>
   <div class="order-summary-card" id="success-summary"></div>
   <div class="screenshot-hint">
     <strong>📸 請截圖保存此頁面作為訂購紀錄</strong>
@@ -315,7 +318,7 @@
   var PICKUP_ADDRESS = '苗栗縣公館鄉館東村和東街2鄰46號';
 
   var SPECS = [
-    { name: '砂糖桔 5斤裝', price: 400, soldout: false }
+    { name: '砂糖橘 5斤裝', price: 400, soldout: false }
   ];
 
   var qtys = [0];
