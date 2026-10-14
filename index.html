@@ -200,7 +200,20 @@
   
     .header .header-subtitle { font-size:14px; margin-top:9px; font-weight:600; }
     .header-description { max-width:430px; margin:15px auto 0; font-size:13px; line-height:1.8; color:#FFF5EB; }
-  </style>
+  
+    /* 2026 砂糖橘：手機版精簡表頭 */
+    .header .header-description { margin: 11px auto 0; line-height: 1.5; }
+    .header-brand-line { display:block; font-size:14px; font-weight:600; letter-spacing:1px; margin-bottom:10px; }
+    .header-price-line { display:inline-block; padding:7px 16px; border-radius:999px; background:rgba(255,255,255,.95); color:#A34E1B; font-size:14px; font-weight:700; letter-spacing:.2px; }
+    @media (max-width:480px) {
+      .header { padding:22px 14px 42px; }
+      .header h1 { font-size:24px; letter-spacing:1px; line-height:1.3; }
+      .header .header-subtitle { margin-top:6px; font-size:13px; }
+      .header .header-description { margin-top:9px; }
+      .header-brand-line { font-size:13px; margin-bottom:8px; }
+      .header-price-line { font-size:13px; padding:6px 13px; }
+    }
+</style>
 </head>
 <body>
 
@@ -208,9 +221,9 @@
 <div id="main-screen">
   <div class="header">
     <div class="brand-kicker">餘有榮焉 <span aria-hidden="true">🍊</span></div>
-    <h1>2026 砂糖橘預購登記</h1>
-    <p class="header-subtitle">苗栗公館｜產地直送</p>
-    <div class="header-description">每盒 5 台斤・NT$400<br>現在預購無須付款，待果實成熟並確認供貨後，另行通知付款與取貨／出貨安排。</div>
+    <h1>砂糖橘預購登記</h1>
+    <p class="header-subtitle">2026｜苗栗公館</p>
+    <div class="header-description"><span class="header-brand-line">有你｜有餘🧡</span><span class="header-price-line">5 台斤／盒 · NT$400</span></div>
   </div>
   <div class="container">
 
@@ -270,7 +283,7 @@
         📍 <b>自取地點：</b>苗栗縣公館鄉館東村和東街2鄰46號<br>
         🕐 <b>自取時間：</b>採預約制，請於收到採收通知後，透過官方 LINE 與我們確認取貨日期及時間。<br>
         🍊 <b>溫馨提醒：</b>因採收期間忙於果園作業，現場不一定有人員留守。為避免您白跑一趟，請務必事先預約並確認取貨時間，恕不接受未預約直接取貨。<br>
-        📞 <b>聯絡方式：</b>官方 LINE／JJ 0911-936229<br>
+        📞 <b>聯絡方式：</b>官方 LINE／JJ：0911936229<br>
       </div>
 
       <div id="delivery-info-section" class="info-box delivery-info" style="display:none;">
@@ -278,7 +291,7 @@
         📦 同一地址每 4 盒（含未滿 4 盒）運費 NT$ 150；5–8 盒 NT$ 300，以此類推。<br>
         💳 目前無須付款，待採收及供貨確認後，將由官方 LINE 另行通知付款與出貨資訊<br>
         🕐 出貨後約 1–2 個工作天到貨（實際配送依物流狀況為準）<br>
-        📞 聯絡電話：JJ 0911-936229<br>
+        📞 聯絡電話：JJ：0911936229<br>
       </div>
 
       <div class="field" style="margin-top:15px;">
@@ -307,7 +320,7 @@
   <div class="order-summary-card" id="success-summary"></div>
   <div class="screenshot-hint">
     <strong>📸 請截圖保存此頁面作為訂購紀錄</strong>
-    如有問題請聯繫：JJ 0911-936229
+    如有問題請聯繫：JJ：0911936229
   </div>
   <button class="back-btn" onclick="location.reload()">繼續訂購</button>
 </div>
