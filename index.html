@@ -378,14 +378,51 @@
           lineUserId = profile.userId;
           lineAccessToken = liff.getAccessToken() || '';
         } else {
-          liff.login();
-          return;
+          // 第一次從外部瀏覽器開啟時，先顯示預購表單，不強制跳到 LINE 帳密頁。
+          // 真正送出時才要求 LINE 登入，以保留訂單通知所需的身分驗證。
+          console.info('尚未登入 LINE；可先填寫預購資料');
         }
       }
     } catch (e) {
       console.warn('LIFF init failed:', e);
     }
+    restorePendingOrder();
     updatePriceDisplay();
+  }
+
+  // 若送出時需要 LINE 登入，先保存客人已填寫的資料，避免登入返回後全部清空。
+  function savePendingOrder() {
+    try {
+      sessionStorage.setItem('youyu_pending_order', JSON.stringify({
+        deliveryType: deliveryType,
+        qtys: qtys,
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        note: document.getElementById('note').value
+      }));
+    } catch (e) { console.warn('暫存訂單失敗', e); }
+  }
+
+  function restorePendingOrder() {
+    try {
+      var raw = sessionStorage.getItem('youyu_pending_order');
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      if (data.deliveryType === '宅配' || data.deliveryType === '自取') setDelivery(data.deliveryType);
+      if (Array.isArray(data.qtys)) {
+        data.qtys.forEach(function(q, i) {
+          if (i < qtys.length) {
+            qtys[i] = Math.max(0, parseInt(q, 10) || 0);
+            syncUI(i);
+          }
+        });
+      }
+      ['name','phone','address','note'].forEach(function(id) {
+        if (typeof data[id] === 'string') document.getElementById(id).value = data[id];
+      });
+      sessionStorage.removeItem('youyu_pending_order');
+    } catch (e) { console.warn('恢復訂單失敗', e); }
   }
 
   function setDelivery(type) {
@@ -522,7 +559,9 @@
     try {
       if (!lineAccessToken && typeof liff !== 'undefined') {
         if (!liff.isLoggedIn()) {
-          liff.login();
+          savePendingOrder();
+          // 外部瀏覽器仍可能需要 LINE 授權；從 LIFF 專用網址開啟可減少登入跳轉。
+          liff.login({ redirectUri: window.location.href.split('#')[0] });
           return;
         }
         lineAccessToken = liff.getAccessToken() || '';
