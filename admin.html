@@ -79,23 +79,11 @@ p { line-height: 1.6; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .actions button { flex: 1; }
 .pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 86px;
-  min-height: 32px;
-  padding: 5px 8px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  letter-spacing: 0;
-  white-space: nowrap;
-  text-align: center;
-  vertical-align: middle;
+  display: inline-block;
+  background: #f8eadc;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 12px;
 }
 
 .status-line { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:10px 0; }
@@ -104,13 +92,13 @@ p { line-height: 1.6; }
   background: #FFF0DB;
   color: #955000;
   border: 1px solid #F2C68B;
-  font-weight: 600;
+  font-weight: 700;
 }
 .pill.status-done {
   background: #E3F2E7;
   color: #24643C;
   border: 1px solid #B1D8BD;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .hide { display: none; }
@@ -137,6 +125,11 @@ p { line-height: 1.6; }
 .dashboard-tile small { display:block; color:#888; font-size:11px; margin-top:6px; }
 .dashboard-tile:focus-visible { outline:3px solid #d97836; }
 .dashboard-hint { background:#fff3df; padding:10px 12px; border-radius:9px; margin-bottom:12px; font-size:13px; }
+.season-box-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.season-box-grid .card { margin-bottom: 0; padding: 13px 6px; }
+.season-box-grid strong { font-size: clamp(20px, 5vw, 27px); }
+.season-box-grid span { display:block; font-size:12px; line-height:1.45; }
+.season-box-grid small { display:block; font-size:10px; color:#888; margin-top:5px; line-height:1.4; }
 @media print {
   header, nav, button, .notice, .no-print { display: none !important; }
   body { background: white; }
@@ -187,6 +180,13 @@ async function getAdminLineUserId() {
     <button type="button" class="card summary dashboard-tile" data-dashboard="ship"><strong id="todayShipCount">0</strong><span>今日預計出貨</span><small id="todayShipDetail">0 筆配送 · 0 盒</small></button>
     <button type="button" class="card summary dashboard-tile" data-dashboard="pickup"><strong id="todayPickupCount">0</strong><span>今日預計自取</span><small id="todayPickupDetail">0 筆配送 · 0 盒</small></button>
     <button type="button" class="card summary dashboard-tile" data-dashboard="unpaid"><strong id="todayUnpaidCount">0</strong><span>目前待收款</span><small>不限訂單建立日期</small></button>
+  </div>
+  <!-- 本產季盒數統計：直接使用與配送明細相同的資料來源 -->
+  <h2 class="dashboard-title">本產季訂單盒數統計</h2>
+  <div class="grid season-box-grid" aria-label="本產季訂單盒數統計">
+    <div class="card summary"><strong id="seasonOrderedBoxes">0</strong><span>累計預購盒數</span><small>宅配＋自取</small></div>
+    <div class="card summary"><strong id="seasonShippedBoxes">0</strong><span>累計已出貨／交貨盒數</span><small>宅配＋自取</small></div>
+    <div class="card summary"><strong id="seasonPendingBoxes">0</strong><span>尚未出貨／交貨盒數</span><small>累計預購－累計已出貨</small></div>
   </div>
   <div id="dashboardHint" class="dashboard-hint hide"></div>
 
@@ -448,6 +448,14 @@ function todayDashboardData() {
 }
 function renderSummary() {
   const data=todayDashboardData();
+  // 與庫存管理 Q3～Q5 同一統計邏輯：配送明細 H 欄盒數，N 欄「已出貨」。
+  // 自取完成交貨時，後端同樣將 N 欄記錄為「已出貨」。
+  const deliveries=allDeliveries();
+  const orderedBoxes=deliveries.reduce((sum,d)=>sum+(Number(d.qty)||0),0);
+  const shippedBoxes=deliveries.reduce((sum,d)=>sum+(d.shipped?(Number(d.qty)||0):0),0);
+  $('seasonOrderedBoxes').textContent=orderedBoxes.toLocaleString('zh-TW');
+  $('seasonShippedBoxes').textContent=shippedBoxes.toLocaleString('zh-TW');
+  $('seasonPendingBoxes').textContent=(orderedBoxes-shippedBoxes).toLocaleString('zh-TW');
   $('dashboardDate').textContent=data.today;
   $('todayNewCount').textContent=data.newly.length+' 筆';
   $('todayShipCount').textContent=data.ship.length+' 筆';
