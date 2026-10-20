@@ -268,15 +268,31 @@
       <h2 id="contact-section-title"><span class="step">03</span> 填寫聯絡人資訊</h2>
       <div class="field" style="margin-bottom:15px;">
         <label>聯絡姓名 <span style="color:#B65D36">＊必填</span></label>
-        <input type="text" id="name" placeholder="請填寫姓名">
+        <input type="text" id="name" placeholder="請填寫姓名" oninput="syncBuyerIfSame()">
       </div>
       <div class="field" style="margin-bottom:15px;">
         <label>手機號碼 <span style="color:#B65D36">＊必填</span></label>
-        <input type="text" id="phone" placeholder="09XX-XXX-XXX" maxlength="12" inputmode="numeric">
+        <input type="text" id="phone" placeholder="09XX-XXX-XXX" maxlength="12" inputmode="numeric" oninput="syncBuyerIfSame()">
       </div>
       <div class="field" id="address-section" style="margin-bottom:15px;display:none;">
         <label>宅配地址 <span style="color:#B65D36">＊必填</span></label>
         <input type="text" id="address" placeholder="請填寫郵遞區號、縣市、區鄉鎮、路名與門牌">
+      </div>
+
+      <div id="buyer-section" style="display:none;border-top:1px solid #FED7AA;padding-top:18px;margin-top:18px;">
+        <h2><span class="step">04</span> 訂購人資訊</h2>
+        <label style="display:flex;align-items:center;gap:9px;margin-bottom:15px;color:#7C3E18;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="buyer-same" onchange="toggleBuyerSame()" style="width:18px;height:18px;accent-color:#F97316;">
+          訂購人同收件人
+        </label>
+        <div class="field" style="margin-bottom:15px;">
+          <label>訂購人姓名 <span style="color:#B65D36">＊必填</span></label>
+          <input type="text" id="buyer-name" placeholder="請填寫訂購人姓名" oninput="syncBuyerIfSame()">
+        </div>
+        <div class="field" style="margin-bottom:15px;">
+          <label>訂購人手機 <span style="color:#B65D36">＊必填</span></label>
+          <input type="tel" id="buyer-phone" placeholder="09XX-XXX-XXX" maxlength="12" inputmode="numeric" oninput="syncBuyerIfSame()">
+        </div>
       </div>
 
       <div id="pickup-info-section" class="info-box pickup-info">
@@ -400,7 +416,10 @@
         name: document.getElementById('name').value,
         phone: document.getElementById('phone').value,
         address: document.getElementById('address').value,
-        note: document.getElementById('note').value
+        note: document.getElementById('note').value,
+        buyerName: document.getElementById('buyer-name').value,
+        buyerPhone: document.getElementById('buyer-phone').value,
+        buyerSame: document.getElementById('buyer-same').checked
       }));
     } catch (e) { console.warn('暫存訂單失敗', e); }
   }
@@ -422,6 +441,10 @@
       ['name','phone','address','note'].forEach(function(id) {
         if (typeof data[id] === 'string') document.getElementById(id).value = data[id];
       });
+      if (typeof data.buyerName === 'string') document.getElementById('buyer-name').value = data.buyerName;
+      if (typeof data.buyerPhone === 'string') document.getElementById('buyer-phone').value = data.buyerPhone;
+      document.getElementById('buyer-same').checked = data.buyerSame === true;
+      toggleBuyerSame();
       sessionStorage.removeItem('youyu_pending_order');
     } catch (e) { console.warn('恢復訂單失敗', e); }
   }
@@ -447,6 +470,23 @@
     el.style.display = 'flex';
   }
 
+  function syncBuyerIfSame() {
+    if (!document.getElementById('buyer-same').checked) return;
+    document.getElementById('buyer-name').value = document.getElementById('name').value;
+    document.getElementById('buyer-phone').value = document.getElementById('phone').value;
+  }
+
+  function toggleBuyerSame() {
+    var same = document.getElementById('buyer-same').checked;
+    var buyerName = document.getElementById('buyer-name');
+    var buyerPhone = document.getElementById('buyer-phone');
+    buyerName.readOnly = same;
+    buyerPhone.readOnly = same;
+    buyerName.style.background = same ? '#F5F5F5' : '';
+    buyerPhone.style.background = same ? '#F5F5F5' : '';
+    if (same) syncBuyerIfSame();
+  }
+
   function setDelivery(type) {
     deliveryType = type;
     document.getElementById('btn-pickup').className   = 'delivery-btn' + (type === '自取' ? ' active' : '');
@@ -454,7 +494,10 @@
     document.getElementById('address-section').style.display       = type === '宅配' ? 'block' : 'none';
     document.getElementById('pickup-info-section').style.display   = type === '自取' ? 'block' : 'none';
     document.getElementById('delivery-info-section').style.display = type === '宅配' ? 'block' : 'none';
-    document.getElementById('contact-section-title').innerHTML = '<span class="step">03</span> ' + (type === '宅配' ? '填寫收件人資訊' : '填寫聯絡人資訊');
+    document.getElementById('contact-section-title').innerHTML = '<span class="step">03</span> ' + (type === '宅配' ? '宅配收件人資訊' : '填寫聯絡人資訊');
+    document.getElementById('buyer-section').style.display = type === '宅配' ? 'block' : 'none';
+    document.querySelector('#name').previousElementSibling.textContent = type === '宅配' ? '收件人姓名 ＊必填' : '聯絡姓名 ＊必填';
+    document.querySelector('#phone').previousElementSibling.textContent = type === '宅配' ? '收件人手機 ＊必填' : '手機號碼 ＊必填';
     updatePriceDisplay();
   }
 
@@ -489,7 +532,7 @@
     });
   }
 
-  function showSuccessScreen(orderId, name, phone, totalAmount, shipping, address, note) {
+  function showSuccessScreen(orderId, name, phone, totalAmount, shipping, address, note, buyerName, buyerPhone) {
     var safe = escapeHtml;
     var isPickup = deliveryType === '自取';
     var subtotal = 0;
@@ -519,8 +562,8 @@
       '<div class="success-id-value">' + safe(orderId) + '</div>' +
       '<span class="success-method">' + (isPickup ? '公館自取' : '新竹貨運宅配') + '</span></div>' +
       '<h3>🧾 訂購明細</h3>' +
-      '<div class="order-row"><span class="label">訂購人</span><span class="value">' + safe(name) + '</span></div>' +
-      '<div class="order-row"><span class="label">聯絡電話</span><span class="value">' + safe(phone) + '</span></div>' +
+      '<div class="order-row"><span class="label">訂購人</span><span class="value">' + safe(buyerName) + '</span></div>' +
+      '<div class="order-row"><span class="label">訂購電話</span><span class="value">' + safe(buyerPhone) + '</span></div>' +
       itemRows +
       '<div class="order-row"><span class="label">商品金額</span><span class="value">NT$ ' + subtotal.toLocaleString('en-US') + '</span></div>' +
       '<div class="order-row"><span class="label">' + (isPickup ? '自取運費' : '宅配運費') + '</span><span class="value">NT$ ' + Number(shipping).toLocaleString('en-US') + '</span></div>' +
@@ -537,6 +580,8 @@
     var phone   = document.getElementById('phone').value.trim();
     var address = document.getElementById('address').value.trim();
     var note    = document.getElementById('note').value.trim();
+    var buyerName = deliveryType === '宅配' ? document.getElementById('buyer-name').value.trim() : name;
+    var buyerPhone = deliveryType === '宅配' ? document.getElementById('buyer-phone').value.trim() : phone;
 
     for (var j = 0; j < SPECS.length; j++) {
       if (SPECS[j].soldout) { qtys[j] = 0; continue; }
@@ -557,6 +602,17 @@
       return;
     }
     phone = cleanPhone;
+
+    if (deliveryType === '宅配') {
+      if (!buyerName || !buyerPhone) { alert('請填寫訂購人姓名與手機'); return; }
+      var cleanBuyerPhone = buyerPhone.replace(/[\s\-]/g, '');
+      if (!/^09\d{8}$/.test(cleanBuyerPhone)) {
+        alert('訂購人手機格式不正確，請填寫 09 開頭的 10 碼號碼'); return;
+      }
+      buyerPhone = cleanBuyerPhone;
+    } else {
+      buyerPhone = phone;
+    }
 
     if (deliveryType === '宅配' && !address) { alert('請填寫宅配地址'); return; }
 
@@ -598,8 +654,8 @@
       }
       var payload = {
         action: 'createOrder',
-        buyerName: name,
-        buyerPhone: phone,
+        buyerName: buyerName,
+        buyerPhone: buyerPhone,
         note: note,
         deliveries: [{
           type: deliveryType,
@@ -622,7 +678,7 @@
       if (!res.ok || result.status !== 'success') {
         throw new Error(result.message || '訂單送出失敗');
       }
-      showSuccessScreen(result.orderId, name, phone, result.total, result.shipping, address, note);
+      showSuccessScreen(result.orderId, name, phone, result.total, result.shipping, address, note, buyerName, buyerPhone);
     } catch (e) {
       console.error('Submit error:', e);
       var msg = e.message && e.message.includes('Failed to fetch')
