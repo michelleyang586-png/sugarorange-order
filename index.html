@@ -235,7 +235,7 @@
           📍 公館自取
         </button>
         <button class="delivery-btn" onclick="setDelivery('宅配')" id="btn-delivery">
-          🚛 新竹貨運宅配
+          🚛 本島新竹貨運宅配
         </button>
       </div>
     </div>
@@ -276,7 +276,8 @@
       </div>
       <div class="field" id="address-section" style="margin-bottom:15px;display:none;">
         <label>宅配地址 <span style="color:#B65D36">＊必填</span></label>
-        <input type="text" id="address" placeholder="請填寫郵遞區號、縣市、區鄉鎮、路名與門牌">
+        <input type="text" id="address" placeholder="請填寫郵遞區號、縣市、區鄉鎮、路名與門牌" oninput="updatePriceDisplay()" aria-describedby="shipping-address-message">
+        <p id="shipping-address-message" role="status" aria-live="polite" style="font-size:13px;margin-top:8px;color:#9A531E;"></p>
       </div>
 
       <div id="buyer-section" style="display:none;border-top:1px solid #FED7AA;padding-top:18px;margin-top:18px;">
@@ -304,7 +305,9 @@
 
       <div id="delivery-info-section" class="info-box delivery-info" style="display:none;">
         🚛 <b>新竹貨運宅配說明：</b><br>
-        📦 同一地址每 4 盒（含未滿 4 盒）運費 NT$ 150；5–8 盒 NT$ 300，以此類推。<br>
+        📍 <b>以下運費僅適用新竹貨運配送台灣本島。</b><br>
+        📦 同一地址每 1～4 盒運費 NT$ 150；5～8 盒 NT$ 300，以此類推，不同地址分別計費。<br>
+        🏝️ <b>離島配送請先透過官方 LINE 聯繫我們，確認運費與配送方式後再安排訂購。</b><br>
         💳 目前無須付款，待採收及供貨確認後，將由官方 LINE 另行通知付款與出貨資訊<br>
         🕐 出貨後約 1–2 個工作天到貨（實際配送依物流狀況為準）<br>
         📞 聯絡電話：JJ：0911936229<br>
@@ -501,8 +504,30 @@
     updatePriceDisplay();
   }
 
+function validateMainlandAddress(address, index) {
+  const compact = address.normalize('NFKC').replace(/[\s\u3000-]/g, '').replace(/臺/g, '台');
+  const offshore = /澎湖|金門|連江|馬祖|小琉球|琉球鄉|綠島|蘭嶼|烏坵|烈嶼|東引|莒光|南竿|北竿|東沙|南沙/;
+  if (offshore.test(compact)) {
+    throw Object.assign(new Error(`第 ${index + 1} 筆為離島配送，無法套用台灣本島新竹貨運費率；請先聯繫我們確認運費及配送方式。`), {status:400});
+  }
+  // 接受常見國別及郵遞區號前綴；要求完整縣市，以免漏判只填鄉鎮的地址。
+  const local = compact.replace(/^(?:(?:中華民國|台灣省|台灣)|(?:\d{3,6})){0,3}/, '');
+  const mainland = /^(?:台北市|新北市|桃園市|台中市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|台東縣)/;
+  if (!mainland.test(local)) {
+    throw Object.assign(new Error(`第 ${index + 1} 筆宅配地址請填寫完整縣市、鄉鎮市區與地址；目前線上運費僅適用新竹貨運配送台灣本島，離島請先聯繫我們。`), {status:400});
+  }
+}
+  function shippingAddressMessage() {
+    if (deliveryType !== '宅配') return '';
+    var address = document.getElementById('address').value.trim();
+    if (!address) return '請填寫完整宅配地址；運費確認後才會顯示總金額。';
+    try { validateMainlandAddress(address, 0); return ''; }
+    catch (error) { return error.message.replace(/^第 1 筆/, '此筆'); }
+  }
+
   function calcShipping() {
     if (deliveryType !== '宅配') return 0;
+    if (shippingAddressMessage()) return null;
     var totalBoxes = qtys.reduce(function(a, b) { return a + b; }, 0);
     if (totalBoxes === 0) return 0;
     return Math.ceil(totalBoxes / 4) * 150;
@@ -518,8 +543,16 @@
       html += '<div class="price-row"><span>' + SPECS[i].name + ' x ' + qtys[i] + '</span><span>NT$ ' + amount + '</span></div>';
     }
     var shipping = calcShipping();
+    var addressMessage = shippingAddressMessage();
+    document.getElementById('shipping-address-message').textContent = addressMessage;
+    if (shipping === null) {
+      html += '<div class="price-row"><span>宅配運費</span><span>待確認</span></div>';
+      html += '<div class="price-total"><span>總計金額</span><span>待確認運費</span></div>';
+      document.getElementById('price-display').innerHTML = html;
+      return;
+    }
     if (shipping > 0) {
-      html += '<div class="price-row"><span>新竹貨運運費</span><span>NT$ ' + shipping + '</span></div>';
+      html += '<div class="price-row"><span>本島新竹貨運運費</span><span>NT$ ' + shipping + '</span></div>';
     }
     var total = subtotal + shipping;
     html += '<div class="price-total"><span>總計金額</span><span>NT$ ' + total + '</span></div>';
@@ -551,7 +584,7 @@
         '<div class="order-row"><span class="label">收件人</span><span class="value">' + safe(name) + '</span></div>' +
         '<div class="order-row"><span class="label">收件電話</span><span class="value">' + safe(phone) + '</span></div>' +
         '<div class="order-row"><span class="label">收件地址</span><span class="value">' + safe(address) + '</span></div>' +
-        '<p>依採收與付款確認情況安排出貨。</p></section>';
+        '<p>新竹貨運配送台灣本島；依採收與付款確認情況安排出貨。</p></section>';
     var noteHtml = note
       ? '<div class="order-row"><span class="label">備註</span><span class="value">' + safe(note) + '</span></div>'
       : '';
@@ -615,6 +648,12 @@
     }
 
     if (deliveryType === '宅配' && !address) { alert('請填寫宅配地址'); return; }
+    if (deliveryType === '宅配' && shippingAddressMessage()) {
+      updatePriceDisplay();
+      alert(shippingAddressMessage());
+      document.getElementById('address').focus();
+      return;
+    }
 
     var shipping = calcShipping();
     var subtotal = 0;
