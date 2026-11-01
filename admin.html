@@ -204,6 +204,8 @@ async function getAdminLineUserId() {
     <select id="orderStatusFilter"><option value="all">全部</option><option value="pending" selected>未完成</option><option value="completed">已完成</option></select>
     <label for="orderTypeFilter">配送方式</label>
     <select id="orderTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
+    <label for="customerSourceFilter">客戶來源</label>
+    <select id="customerSourceFilter"><option value="">全部客戶來源</option><option value="待分類">待分類</option></select>
     <div id="orderList"></div>
   </section>
 
@@ -469,6 +471,7 @@ function openDashboardCategory(category) {
   const hint=$('dashboardHint');
   const q=$('search');
   q.value='';
+  $('customerSourceFilter').value='';
   if(category==='new') {
     switchPage('orders');
     $('orderStatusFilter').value='all';
@@ -501,12 +504,34 @@ function clearDashboardSelection() {
   $('dashboardHint').classList.add('hide');
 }
 // 訂單管理以每一筆配送為單位篩選與操作，避免多地址訂單誤操作。
+// X 欄客戶來源：複選以逗號分隔，分類名稱中的頓號保留。
+function parseCustomerSources(value) {
+  return [...new Set(String(value || '').split(/[,，\r\n]+/).map(x => x.trim()).filter(x => x && x !== '待分類'))];
+}
+function matchesCustomerSource(order, selected) {
+  const sources = order.customerSources || [];
+  return !selected || (selected === '待分類' ? sources.length === 0 : sources.includes(selected));
+}
+function renderCustomerSourceFilter() {
+  const select = $('customerSourceFilter');
+  const previous = select.value;
+  const options = [...new Set(orders.flatMap(o => o.customerSources || []))].sort((a,b) => a.localeCompare(b, 'zh-Hant'));
+  select.innerHTML = '<option value="">全部客戶來源</option><option value="待分類">待分類</option>' +
+    options.map(source => `<option value="${escapeHTML(source)}">${escapeHTML(source)}</option>`).join('');
+  select.value = previous === '待分類' || options.includes(previous) ? previous : '';
+}
+function customerSourceBadges(order) {
+  const sources = order.customerSources || [];
+  return (sources.length ? sources : ['待分類']).map(source => `<span class="pill">${escapeHTML(source)}</span>`).join(' ');
+}
+
 function orderCard(order, visibleDeliveries) {
   const boxes = order.deliveries.reduce((sum,d)=>sum+d.qty,0);
   const total = order.deliveries.reduce((sum,d)=>sum+deliveryTotal(d),0);
   return `
     <div class="card">
       <h3>訂購人：${escapeHTML(order.buyer)}</h3>
+      <p>客戶來源：${customerSourceBadges(order)}</p>
       <p class="muted">訂購電話：${escapeHTML(order.phone)}<br>訂單編號：${escapeHTML(order.id)}</p>
       <p>整筆訂單：${boxes} 盒 · <strong>${money(total)}</strong></p>
       ${visibleDeliveries.map(d=>`
@@ -537,7 +562,9 @@ function renderOrders() {
   const q = $('search').value.trim().toLowerCase();
   const status = $('orderStatusFilter').value;
   const type = $('orderTypeFilter').value;
+  const selectedSource = $('customerSourceFilter').value;
   const cards = orders.map(order => {
+    if (!matchesCustomerSource(order, selectedSource)) return '';
     const visible = order.deliveries.filter(d => {
       if(dashboardSelectedOrderIds && !dashboardSelectedOrderIds.has(order.id)) return false;
       if(dashboardSelectedDeliveryIds && !dashboardSelectedDeliveryIds.has(d.id)) return false;
@@ -1187,6 +1214,7 @@ orders = (data.orders || []).map(row => {
   return {
     id: row[0] || '',
     createdAt: row[1] || '',
+    customerSources: parseCustomerSources(row[23]),
     buyer: row[5] || '',
     phone: row[6] || '',
     note: row[16] || '',
@@ -1214,6 +1242,7 @@ order.id = result.orderId;
 }
 
 function renderAll() {
+  renderCustomerSourceFilter();
   renderSummary();
   renderOrders();
   renderPayments();
@@ -1234,7 +1263,7 @@ document.querySelectorAll("nav button").forEach(button => {
 }
 
   document.querySelectorAll('[data-dashboard]').forEach(button=>button.addEventListener('click',()=>openDashboardCategory(button.dataset.dashboard)));
-['search','orderStatusFilter','orderTypeFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',clearDashboardSelection));
+['search','orderStatusFilter','orderTypeFilter','customerSourceFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',clearDashboardSelection));
 document.querySelectorAll("nav button").forEach(button => {
   button.addEventListener("click", () => {
     clearDashboardSelection();
@@ -1246,6 +1275,7 @@ document.querySelectorAll("nav button").forEach(button => {
 $("search").addEventListener("input", renderOrders);
 $("orderStatusFilter").addEventListener("change", renderOrders);
 $("orderTypeFilter").addEventListener("change", renderOrders);
+$("customerSourceFilter").addEventListener("change", renderOrders);
 $("orderList").addEventListener("change", event => {
   if (event.target.matches("[data-shipdate]")) updateShipDate(event.target.dataset.shipdate,event.target.value);
 });
@@ -1320,6 +1350,7 @@ estimate();
     orders = (data.orders || []).map(row => ({
       id: row[0] || '',
       createdAt: row[1] || '',
+    customerSources: parseCustomerSources(row[23]),
       buyer: row[5] || '',
       phone: row[6] || '',
       note: row[16] || '',
