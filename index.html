@@ -359,6 +359,8 @@
   var lineUserId = '';
   var lineAccessToken = '';
   var sending = false;
+  var liffInitPromise = null;
+  var orderSubmitted = false;
   var LIFF_ENTRY_URL = 'https://liff.line.me/2009767596-nZiSJohI';
 
   function syncUI(idx) {
@@ -389,17 +391,22 @@
   async function init() {
     try {
       if (typeof liff === 'undefined') {
-        console.warn('LIFF SDK 未載入，以一般瀏覽器模式運行');
+        console.warn('LIFF SDK 未載入');
       } else {
-        await liff.init({ liffId: LIFF_ID });
+        // 初始化只執行一次；送單時等它完成，避免使用者快速操作造成競態。
+        liffInitPromise = liff.init({ liffId: LIFF_ID });
+        await liffInitPromise;
         if (liff.isLoggedIn()) {
-          var profile = await liff.getProfile();
-          lineName   = profile.displayName;
-          lineUserId = profile.userId;
+          // 先取得授權，個人資料讀取失敗不應阻止送單。
           lineAccessToken = liff.getAccessToken() || '';
+          try {
+            var profile = await liff.getProfile();
+            lineName = profile.displayName || '';
+            lineUserId = profile.userId || '';
+          } catch (profileError) {
+            console.warn('LINE 個人資料暫時無法讀取', profileError);
+          }
         } else {
-          // 第一次從外部瀏覽器開啟時，先顯示預購表單，不強制跳到 LINE 帳密頁。
-          // 真正送出時才要求 LINE 登入，以保留訂單通知所需的身分驗證。
           console.info('尚未登入 LINE；可先填寫預購資料');
         }
       }
@@ -669,24 +676,30 @@ function validateMainlandAddress(address, index) {
     }).filter(Boolean).join('、');
 
     var btn = document.getElementById('submit-btn');
+    if (orderSubmitted) return;
+    sending = true;
     btn.disabled = true;
     btn.textContent = '訂單處理中...';
-
-    sending = true;
     try {
-      if (!lineAccessToken && typeof liff === 'undefined') {
+      if (typeof liff === 'undefined') {
         showLineEntryNotice();
         return;
       }
-      if (!lineAccessToken && typeof liff !== 'undefined') {
-        if (!liff.isLoggedIn()) {
-          // 禁止在送出訂單時自動跳轉登入，避免 iOS / 外部瀏覽器重複喚起 LINE。
-          // 顯示明確操作指引，並保留當前頁面的填寫內容。
+      // 若使用者在 LIFF 初始化尚未完成時送單，先等初始化結果。
+      if (liffInitPromise) {
+        try { await liffInitPromise; }
+        catch (initError) {
+          console.warn('送單時 LIFF 初始化失敗', initError);
           showLineEntryNotice();
           return;
         }
-        lineAccessToken = liff.getAccessToken() || '';
       }
+      if (!liff.isLoggedIn()) {
+        showLineEntryNotice();
+        return;
+      }
+      // 每次送出時重新取得目前 LIFF Token，避免使用過期的暫存值。
+      lineAccessToken = liff.getAccessToken() || '';
       if (!lineAccessToken) {
         showLineEntryNotice();
         return;
@@ -717,17 +730,20 @@ function validateMainlandAddress(address, index) {
       if (!res.ok || result.status !== 'success') {
         throw new Error(result.message || '訂單送出失敗');
       }
+      orderSubmitted = true;
       showSuccessScreen(result.orderId, name, phone, result.total, result.shipping, address, note, buyerName, buyerPhone);
     } catch (e) {
       console.error('Submit error:', e);
       var msg = e.message && e.message.includes('Failed to fetch')
-        ? '網路連線失敗，請確認網路後再試'
-        : (e.message || '送出失敗，請稍後再試');
+        ? '連線中斷，訂單結果可能不明。請先向官方 LINE 核對訂單是否成立，避免重複送單。'
+        : (e.message || '送出失敗') + '\n若不確定訂單是否成立，請先向官方 LINE 核對再重試。';
       alert(msg);
-      btn.disabled = false;
-      btn.textContent = '確認送出預購單 →';
     } finally {
       sending = false;
+      if (!orderSubmitted) {
+        btn.disabled = false;
+        btn.textContent = '確認送出預購單 →';
+      }
     }
   }
 
