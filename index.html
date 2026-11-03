@@ -221,7 +221,10 @@
     .delivery-btn .delivery-icon { display:block; font-size:26px; margin-bottom:4px; }
     .delivery-btn .delivery-caption { display:block; font-size:12px; font-weight:400; }
     .delivery-choice-warning { color:#B45309; font-size:13px; margin-top:10px; line-height:1.6; }
-    /* 訂購成功後的 LINE 好友狀態提醒：不影響訂單送出 */
+    /* LINE 好友狀態提醒：不影響訂單送出 */
+    .preorder-friendship-card { background:#FFFFFF; border:1px solid #FED7AA; border-radius:16px; padding:16px; margin-bottom:16px; color:#5D4031; line-height:1.75; }
+    .preorder-friendship-card h3 { font-size:16px; color:#C2410C; margin-bottom:8px; }
+    .preorder-friendship-card p { font-size:14px; margin-bottom:12px; }
     .friendship-card { max-width:520px; margin:0 auto 18px; padding:18px; background:#fff; border-radius:16px; text-align:left; color:#5D4031; line-height:1.75; }
     .friendship-card h3 { font-size:16px; color:#C2410C; margin-bottom:7px; }
     .friendship-card p { font-size:14px; margin:0 0 10px; }
@@ -240,6 +243,14 @@
     <div class="header-description"><span class="header-brand-line">有你｜有餘🧡</span><span class="header-price-line">5 台斤／盒 · NT$400</span></div>
   </div>
   <div class="container">
+
+    <!-- 訂購前智慧好友提醒：僅確認未加入好友時顯示 -->
+    <section id="preorder-friendship-reminder" class="preorder-friendship-card" style="display:none" aria-live="polite">
+      <h3>💚 訂購前溫馨提醒</h3>
+      <p>您尚未加入「餘有榮焉」官方 LINE 好友。為了收到砂糖橘的採收、付款與取貨／出貨通知，建議先加入好友，再繼續填寫訂單。</p>
+      <a class="friendship-link" href="https://line.me/R/ti/p/@youyu" target="_blank" rel="noopener noreferrer">加入餘有榮焉官方 LINE 好友</a>
+      <p style="font-size:12px;color:#80695B;margin:10px 0 0">可先繼續訂購，加入好友不是送單的必要條件。</p>
+    </section>
 
     <!-- 取貨方式 -->
     <div class="card">
@@ -383,6 +394,21 @@
 
   var OFFICIAL_LINE_FRIEND_URL = 'https://line.me/R/ti/p/@youyu';
 
+  // 訂購前僅在 LINE 明確回報「不是好友」時顯示；查詢失敗不猜測狀態。
+  async function showPreorderFriendshipReminder() {
+    var box = document.getElementById('preorder-friendship-reminder');
+    if (!box) return;
+    box.style.display = 'none';
+    try {
+      if (typeof liff === 'undefined' || typeof liff.getFriendship !== 'function' || !liff.isLoggedIn()) return;
+      var friendship = await liff.getFriendship();
+      // 若訂單已成功，避免在成功頁之後再改動訂購前畫面。
+      if (!orderSubmitted && friendship && friendship.friendFlag === false) box.style.display = 'block';
+    } catch (error) {
+      console.warn('訂購前無法確認 LINE 好友狀態，略過提醒', error);
+    }
+  }
+
   // 訂單已成立後才查好友狀態。查詢失敗時只顯示一般提醒，不影響訂單。
   async function showFriendshipReminder() {
     var box = document.getElementById('friendship-reminder');
@@ -462,6 +488,8 @@
     }
     restorePendingOrder();
     updatePriceDisplay();
+    // 不阻塞表單初始化與送單；已加入好友不顯示提醒。
+    showPreorderFriendshipReminder().catch(function(error) { console.warn("訂購前好友提醒失敗", error); });
   }
 
   // 若送出時需要 LINE 登入，先保存客人已填寫的資料，避免登入返回後全部清空。
