@@ -213,6 +213,20 @@
       .header-brand-line { font-size:13px; margin-bottom:8px; }
       .header-price-line { font-size:13px; padding:6px 13px; }
     }
+
+    /* 清楚區分自取與宅配，預設不選擇 */
+    .delivery-toggle { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0; background:transparent; }
+    .delivery-btn { min-height:100px; padding:14px 8px; background:#FFFDF9; border:2px solid #FED7AA; border-radius:14px; color:#7C4A2D; font-size:15px; line-height:1.65; }
+    .delivery-btn.active { border-color:#EA580C; background:#FFF0DF; color:#C2410C; box-shadow:0 0 0 1px #EA580C; }
+    .delivery-btn .delivery-icon { display:block; font-size:26px; margin-bottom:4px; }
+    .delivery-btn .delivery-caption { display:block; font-size:12px; font-weight:400; }
+    .delivery-choice-warning { color:#B45309; font-size:13px; margin-top:10px; line-height:1.6; }
+    /* 訂購成功後的 LINE 好友狀態提醒：不影響訂單送出 */
+    .friendship-card { max-width:520px; margin:0 auto 18px; padding:18px; background:#fff; border-radius:16px; text-align:left; color:#5D4031; line-height:1.75; }
+    .friendship-card h3 { font-size:16px; color:#C2410C; margin-bottom:7px; }
+    .friendship-card p { font-size:14px; margin:0 0 10px; }
+    .friendship-link { display:block; text-align:center; background:#06C755; color:#fff; border-radius:12px; padding:13px; font-weight:700; text-decoration:none; }
+    .friendship-card .friendship-small { font-size:12px; color:#80695B; margin:9px 0 0; }
 </style>
 </head>
 <body>
@@ -231,13 +245,16 @@
     <div class="card">
       <h2><span class="step">01</span> 選擇取貨方式</h2>
       <div class="delivery-toggle">
-        <button class="delivery-btn active" onclick="setDelivery('自取')" id="btn-pickup">
-          📍 公館自取
+        <button type="button" class="delivery-btn" onclick="setDelivery('自取')" id="btn-pickup" aria-pressed="false">
+          <span class="delivery-icon">📍</span>我要自己去拿
+          <span class="delivery-caption">苗栗公館自取</span>
         </button>
-        <button class="delivery-btn" onclick="setDelivery('宅配')" id="btn-delivery">
-          🚛 本島新竹貨運宅配
+        <button type="button" class="delivery-btn" onclick="setDelivery('宅配')" id="btn-delivery" aria-pressed="false">
+          <span class="delivery-icon">🚛</span>我要寄到家裡
+          <span class="delivery-caption">新竹貨運宅配（另計運費）</span>
         </button>
       </div>
+      <p id="delivery-choice-warning" class="delivery-choice-warning" role="status">請先選擇自取或宅配，避免選錯取貨方式。</p>
     </div>
 
     <!-- 規格選擇 -->
@@ -296,7 +313,7 @@
         </div>
       </div>
 
-      <div id="pickup-info-section" class="info-box pickup-info">
+      <div id="pickup-info-section" class="info-box pickup-info" style="display:none;">
         📍 <b>自取地點：</b>苗栗縣公館鄉館東村和東街46號<br>
         🕐 <b>自取時間：</b>採預約制，請於收到採收通知後，透過官方 LINE 與我們確認取貨日期及時間。<br>
         🍊 <b>溫馨提醒：</b>因採收期間忙於果園作業，現場不一定有人員留守。為避免您白跑一趟，請務必事先預約並確認取貨時間，恕不接受未預約直接取貨。<br>
@@ -337,6 +354,7 @@
   <div class="success-title">預購登記成功！</div>
   <div class="success-sub">餘有榮焉｜2026 砂糖橘</div>
   <div class="order-summary-card" id="success-summary"></div>
+  <div id="friendship-reminder" class="friendship-card" style="display:none" aria-live="polite"></div>
   <div class="screenshot-hint">
     <strong>📸 請截圖保存此頁面作為訂購紀錄</strong>
     如有問題請聯繫：JJ：0911936229
@@ -354,7 +372,7 @@
   ];
 
   var qtys = [0];
-  var deliveryType = '自取';
+  var deliveryType = '';
   var lineName = '';
   var lineUserId = '';
   var lineAccessToken = '';
@@ -362,6 +380,35 @@
   var liffInitPromise = null;
   var orderSubmitted = false;
   var LIFF_ENTRY_URL = 'https://liff.line.me/2009767596-nZiSJohI';
+
+  var OFFICIAL_LINE_FRIEND_URL = 'https://line.me/R/ti/p/@youyu';
+
+  // 訂單已成立後才查好友狀態。查詢失敗時只顯示一般提醒，不影響訂單。
+  async function showFriendshipReminder() {
+    var box = document.getElementById('friendship-reminder');
+    if (!box) return;
+    box.style.display = 'none';
+    var isFriend = null;
+    try {
+      if (typeof liff !== 'undefined' && typeof liff.getFriendship === 'function' && liff.isLoggedIn()) {
+        var friendship = await liff.getFriendship();
+        if (friendship && typeof friendship.friendFlag === 'boolean') isFriend = friendship.friendFlag;
+      }
+    } catch (error) {
+      console.warn('無法確認 LINE 好友狀態；改顯示一般提醒', error);
+    }
+    // 已確認是好友：不重複顯示加好友提醒。
+    if (isFriend === true) return;
+    var heading = isFriend === false ? '📢 請加入餘有榮焉官方 LINE' : '📢 請確認已加入餘有榮焉官方 LINE';
+    var message = isFriend === false
+      ? '目前尚未偵測到您與官方帳號的好友關係。請加入好友，以便收到採收、付款及取貨／出貨通知。'
+      : '目前無法確認您的好友狀態。若尚未加入，請點下方按鈕加入，以免錯過後續通知。';
+    box.innerHTML = '<h3>' + heading + '</h3><p>' + message + '</p>' +
+      '<a class="friendship-link" href="' + OFFICIAL_LINE_FRIEND_URL + '" target="_blank" rel="noopener noreferrer">加入餘有榮焉官方 LINE 好友</a>' +
+      '<p class="friendship-small">官方 LINE：@youyu｜訂單已成立，加入好友不會重複下單。</p>';
+    box.style.display = 'block';
+  }
+
 
   function syncUI(idx) {
     var el = document.getElementById('qty-' + idx);
@@ -501,6 +548,9 @@
     deliveryType = type;
     document.getElementById('btn-pickup').className   = 'delivery-btn' + (type === '自取' ? ' active' : '');
     document.getElementById('btn-delivery').className = 'delivery-btn' + (type === '宅配' ? ' active' : '');
+    document.getElementById('btn-pickup').setAttribute('aria-pressed', String(type === '自取'));
+    document.getElementById('btn-delivery').setAttribute('aria-pressed', String(type === '宅配'));
+    document.getElementById('delivery-choice-warning').style.display = 'none';
     document.getElementById('address-section').style.display       = type === '宅配' ? 'block' : 'none';
     document.getElementById('pickup-info-section').style.display   = type === '自取' ? 'block' : 'none';
     document.getElementById('delivery-info-section').style.display = type === '宅配' ? 'block' : 'none';
@@ -616,6 +666,12 @@ function validateMainlandAddress(address, index) {
 
   async function submitOrder() {
     if (sending) return;
+    if (deliveryType !== '自取' && deliveryType !== '宅配') {
+      document.getElementById('delivery-choice-warning').style.display = 'block';
+      document.getElementById('btn-pickup').scrollIntoView({behavior:'smooth',block:'center'});
+      alert('請先選擇「我要自己去拿」或「我要寄到家裡」，再送出預購單。');
+      return;
+    }
     var name    = document.getElementById('name').value.trim();
     var phone   = document.getElementById('phone').value.trim();
     var address = document.getElementById('address').value.trim();
@@ -669,6 +725,8 @@ function validateMainlandAddress(address, index) {
       subtotal += qtys[i] * SPECS[i].price;
     }
     var totalAmount = subtotal + shipping;
+    var methodText = deliveryType === '自取' ? '苗栗公館自取（需預約）' : '新竹貨運宅配（寄到填寫的收件地址）';
+    if (!confirm('請再次確認取貨方式：\n\n' + methodText + '\n\n訂購數量：' + totalBoxes + ' 盒\n預購總金額：NT$ ' + totalAmount.toLocaleString('en-US') + '\n\n確認無誤後按「確定」送出訂單。')) return;
 
     var specSummary = SPECS.map(function(s, i) {
       if (s.soldout) return null;
@@ -732,6 +790,8 @@ function validateMainlandAddress(address, index) {
       }
       orderSubmitted = true;
       showSuccessScreen(result.orderId, name, phone, result.total, result.shipping, address, note, buyerName, buyerPhone);
+      // 非同步查詢好友狀態，不等待、不阻擋已成功建立的訂單。
+      showFriendshipReminder().catch(function(err) { console.warn('好友提醒顯示失敗', err); });
     } catch (e) {
       console.error('Submit error:', e);
       var msg = e.message && e.message.includes('Failed to fetch')
