@@ -1,1392 +1,873 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>餘有榮焉｜訂單管理</title>
-<style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: #f7f5f0;
-  color: #38332e;
-  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
-}
-header {
-  background: #d97836;
-  color: white;
-  padding: 20px 16px;
-  text-align: center;
-}
-header .brand-layout { display:flex; align-items:center; justify-content:center; min-height:36px; }
-header .brand-title { margin:0; font-size:clamp(16px,4.3vw,26px); font-weight:700; line-height:1.35; white-space:nowrap; }
-@media(max-width:380px){header{padding:17px 8px}header .brand-title{font-size:16px}}
-main { max-width: 800px; margin: auto; padding: 14px; }
-nav {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 7px;
-  margin-bottom: 16px;
-}
-button {
-  border: 0;
-  border-radius: 9px;
-  padding: 11px;
-  font: inherit;
-  cursor: pointer;
-}
-nav button { background: #eee6db; }
-nav button.active { background: #d97836; color: white; }
-.primary { background: #d97836; color: white; }
-.secondary { background: #eee6db; }
-.danger { background: #fff0eb; color: #a33c25; }
-.card {
-  background: white;
-  border-radius: 13px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px #00000009;
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-.summary { text-align: center; }
-.summary strong { display: block; font-size: 25px; color: #d97836; }
-.summary span { font-size: 13px; color: #777; }
-label { display: block; margin: 12px 0 5px; font-size: 14px; }
-input, select, textarea {
-  width: 100%;
-  padding: 11px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font: inherit;
-  background: white;
-}
-textarea { min-height: 65px; }
-h2 { font-size: 19px; }
-h3 { margin: 0 0 10px; font-size: 17px; }
-p { line-height: 1.6; }
-.muted { color: #777; font-size: 13px; }
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.actions button { flex: 1; }
-.pill {
-  display: inline-block;
-  background: #f8eadc;
-  padding: 5px 9px;
-  border-radius: 20px;
-  font-size: 12px;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>餘有榮焉｜2026砂糖橘預購｜</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --main: #F97316;
+      --main-light: #FFF7ED;
+      --main-dark: #EA580C;
+      --bg-color: #FAFAFA;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg-color); color: #444; line-height: 1.5;
+    }
+    .header {
+      background: linear-gradient(145deg, #FB923C 0%, #FDE68A 100%);
+      color: white; padding: 40px 20px; text-align: center;
+      border-radius: 0 0 30px 30px;
+      box-shadow: 0 4px 15px rgba(249,115,22,0.3);
+    }
+    .header h1 { font-size: 24px; letter-spacing: 1px; }
+    .header p  { font-size: 14px; margin-top: 8px; opacity: 0.9; }
+    .container { padding: 20px 16px; max-width: 500px; margin: -20px auto 0; }
+    .card {
+      background: white; border-radius: 18px; padding: 20px;
+      margin-bottom: 16px; box-shadow: 0 8px 24px rgba(149,157,165,0.1);
+    }
+    .card h2 { font-size: 16px; color: var(--main); margin-bottom: 16px; }
+    .delivery-toggle {
+      display: flex; gap: 10px; background: #F0F0F0;
+      padding: 4px; border-radius: 12px;
+    }
+    .delivery-btn {
+      flex: 1; padding: 10px; border: none; border-radius: 10px;
+      background: transparent; font-size: 14px; cursor: pointer; color: #777;
+      transition: all 0.2s;
+    }
+    .delivery-btn.active {
+      background: white; color: var(--main); font-weight: bold;
+      box-shadow: 0 2px 8px rgba(249,115,22,0.15);
+    }
+    .spec-card {
+      border: 1px solid #EEE; border-radius: 14px;
+      padding: 16px; margin-bottom: 12px; transition: 0.3s;
+    }
+    .spec-card.has-qty { border-color: var(--main); background: var(--main-light); }
+    .spec-card.soldout {
+      border-color: #DDD; background: #F5F5F5;
+      opacity: 0.7; pointer-events: none;
+    }
+    .soldout-badge {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      color: #fff; background: #AAAAAA; border-radius: 6px;
+      padding: 2px 8px; margin-left: 8px; vertical-align: middle; letter-spacing: 1px;
+    }
+    .qty-control.soldout-ctrl { opacity: 0.4; }
+    .qty-input.soldout-input { background: #EEE; color: #AAA; border-color: #DDD; }
+    .qty-btn.soldout-btn { background: #EEE; color: #BBB; box-shadow: none; cursor: not-allowed; }
+    .spec-header { display: flex; justify-content: space-between; align-items: center; }
+    .spec-name  { font-size: 16px; font-weight: 600; }
+    .spec-price { font-size: 15px; color: var(--main); font-weight: 700; }
+    .qty-control { display: flex; align-items: center; gap: 10px; }
+    .qty-btn {
+      width: 32px; height: 32px; border-radius: 10px; border: none;
+      background: white; color: var(--main); font-size: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer; flex-shrink: 0;
+    }
+    .qty-input {
+      width: 44px; height: 36px;
+      border: 1.5px solid #DDD; border-radius: 8px;
+      background: white; font-size: 17px; font-weight: bold; color: #444;
+      text-align: center; padding: 0;
+      font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+      -moz-appearance: textfield;
+    }
+    .qty-input::-webkit-inner-spin-button,
+    .qty-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .qty-input:focus { outline: none; border-color: var(--main); }
+    .spec-card.has-qty .qty-input { border-color: var(--main); color: var(--main); }
+    .field label { font-size: 13px; font-weight: 600; color: #888; margin-bottom: 8px; display: block; }
+    input[type="text"], input[type="tel"], textarea {
+      background: #F9F9F9; border: 1px solid #EDEDED;
+      padding: 14px; border-radius: 12px; font-size: 15px; width: 100%;
+      font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, input[type="tel"]:focus, textarea:focus {
+      outline: none; border-color: var(--main);
+    }
+    .info-box {
+      border-radius: 12px; padding: 14px; margin-top: 12px;
+      font-size: 13px; color: #888; line-height: 1.8;
+    }
+    .pickup-info {
+      background: #FFF8F3; border: 1px dashed #FDB97A;
+    }
+    .delivery-info {
+      background: #F0F7FF; border: 1px dashed #B8DAFF;
+    }
+    .info-box b { color: var(--main); }
+    .price-display { background: #333; color: #EEE; border-radius: 16px; padding: 20px; margin-top: 10px; }
+    .price-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+    .price-total {
+      display: flex; justify-content: space-between;
+      font-size: 20px; font-weight: bold; color: white;
+      border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 8px;
+    }
+    .submit-btn {
+      width: 100%; padding: 18px; background: var(--main);
+      color: white; border: none; border-radius: 18px;
+      font-size: 17px; font-weight: bold; margin: 20px 0 40px; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.status-line { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:10px 0; }
-/* 狀態顏色：待處理暖橘、已完成柔和綠；文字搭配底色提升辨識度 */
-.pill.status-pending {
-  background: #FFF0DB;
-  color: #955000;
-  border: 1px solid #F2C68B;
-  font-weight: 700;
-}
-.pill.status-done {
-  background: #E3F2E7;
-  color: #24643C;
-  border: 1px solid #B1D8BD;
-  font-weight: 700;
-}
+    /* 餘有榮焉：溫暖、清楚的手機預購介面 */
+    :root { --main:#F97316; --main-light:#FFF7ED; --main-dark:#EA580C; --bg-color:#FFF7ED; }
+    body { color:#4A403A; background:#FFF7ED; }
+    .header { background:linear-gradient(150deg,#F97316,#FB923C); border-radius:0 0 26px 26px; padding:32px 20px 50px; box-shadow:none; }
+    .header h1 { font-size:28px; letter-spacing:2px; font-weight:700; }
+    .header p { font-size:14px; opacity:.95; }
+    .brand-kicker { color:#FFF7ED; font-size:12px; letter-spacing:2px; margin-bottom:10px; }
+    .container { position:relative; margin:-24px auto 0; }
+    .card { border:1px solid #FFEDD5; border-radius:17px; box-shadow:0 5px 18px rgba(249,115,22,.08); }
+    .card h2 { color:#C2410C; font-size:16px; display:flex; align-items:center; gap:9px; }
+    .step { display:inline-flex; align-items:center; justify-content:center; border-radius:50%; width:26px; height:26px; font-size:11px; color:white; background:#F97316; }
+    .delivery-toggle { background:#FFEDD5; }
+    .delivery-btn { min-height:46px; color:#7C4A2D; }
+    .delivery-btn.active { color:#EA580C; }
+    .spec-name { color:#7C3E18; }
+    .spec-price { color:#EA580C; }
+    .qty-btn { width:40px; height:40px; background:#FFF7ED; font-weight:700; box-shadow:none; }
+    .qty-input { height:40px; }
+    .field label { color:#9A531E; }
+    input[type="text"],input[type="tel"],textarea { background:#FFFCF8; border-color:#FED7AA; }
+    .info-box { color:#9A531E; }
+    .delivery-info { background:#FFF7ED; border:1px solid #FDBA74; }
+    .price-display { background:#F97316; border-radius:16px; }
+    .submit-btn { background:#F97316; box-shadow:0 5px 14px rgba(175,88,46,.18); min-height:56px; }
+    .submit-btn:focus-visible,.delivery-btn:focus-visible,.qty-btn:focus-visible { outline:3px solid #EA580C; outline-offset:2px; }
+    @media(max-width:390px){.card{padding:16px}.spec-header{gap:8px}.qty-control{gap:5px}.spec-name{font-size:14px}.qty-input{width:38px}.header h1{font-size:25px}}
+    /* 成功畫面 */
+    #success-screen {
+      display: none; min-height: 100vh;
+      background: linear-gradient(145deg, #F97316 0%, #FB923C 100%);
+      padding: 40px 20px; text-align: center;
+    }
+    .success-icon { font-size: 64px; margin-bottom: 16px; }
+    .success-title { font-size: 22px; font-weight: bold; color: white; margin-bottom: 8px; }
+    .success-sub { font-size: 14px; color: rgba(255,255,255,0.85); margin-bottom: 16px; }
+    .screenshot-hint {
+      background: rgba(255,255,255,0.25);
+      border: 1.5px dashed rgba(255,255,255,0.6);
+      border-radius: 12px; padding: 12px 16px;
+      margin-bottom: 20px; font-size: 13px;
+      color: white; line-height: 1.9; text-align: left;
+    }
+    .screenshot-hint strong { font-size: 14px; display: block; margin-bottom: 2px; }
+    .order-summary-card {
+      background: white; border-radius: 18px; padding: 20px;
+      text-align: left; margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(149,157,165,0.15);
+    }
+    .order-summary-card h3 { font-size: 15px; color: var(--main); margin-bottom: 14px; }
+    .order-row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #F5F5F5; }
+    .order-row:last-child { border-bottom: none; }
+    .order-row .label { color: #999; }
+    .order-row .value { font-weight: 600; color: #444; text-align: right; max-width: 60%; }
+    .order-total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; padding-top: 12px; margin-top: 4px; border-top: 2px solid #F0F0F0; }
+    .order-total-row .value { color: var(--main); }
+    .back-btn {
+      background: white; color: var(--main); border: none;
+      border-radius: 16px; padding: 16px 40px; font-size: 16px; font-weight: bold;
+      cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    /* 10/12 使用者提供版本：成功頁橘色系專屬樣式 */
+    #success-screen { background:linear-gradient(145deg,#F97316 0%,#FB923C 100%); }
+    #success-screen .order-summary-card { max-width:520px; margin:0 auto 18px; padding:24px 20px; }
+    #success-screen .order-row { gap:12px; line-height:1.65; border-color:#FFEDD5; }
+    #success-screen .order-row .label { color:#9A531E; flex-shrink:0; }
+    #success-screen .order-row .value { color:#5D4031; max-width:68%; overflow-wrap:anywhere; }
+    #success-screen .order-total-row { border-color:#FDBA74; color:#7C3E18; }
+    #success-screen .order-total-row .value { color:#EA580C; }
+    #success-screen .success-order-id { text-align:center; padding:4px 0 17px; border-bottom:1px solid #FED7AA; }
+    #success-screen .success-id-label { font-size:12px; color:#9A531E; }
+    #success-screen .success-id-value { font-size:clamp(17px,4.5vw,23px); font-weight:800; color:#EA580C; overflow-wrap:anywhere; margin:8px 0; }
+    #success-screen .success-method { display:inline-block; padding:5px 14px; border-radius:99px; background:#FFEDD5; color:#C2410C; font-size:12px; }
+    #success-screen .success-detail { margin-top:20px; padding:15px; border-radius:13px; background:#FFF7ED; }
+    #success-screen .success-detail h3 { margin:0 0 10px; color:#C2410C; }
+    #success-screen .success-detail p { margin:10px 0 0; color:#9A531E; font-size:13px; line-height:1.8; }
+    #success-screen .success-payment { text-align:center; margin-top:18px; }
+    #success-screen .success-payment strong { color:#EA580C; font-size:18px; }
+    #success-screen .success-payment p { font-size:13px; color:#7C3E18; line-height:1.8; margin-top:9px; }
+    #success-screen .screenshot-hint { max-width:520px; margin:0 auto 20px; }
+  
+    .header .header-subtitle { font-size:14px; margin-top:9px; font-weight:600; }
+    .header-description { max-width:430px; margin:15px auto 0; font-size:13px; line-height:1.8; color:#FFF5EB; }
+  
+    /* 2026 砂糖橘：手機版精簡表頭 */
+    .header .header-description { margin: 11px auto 0; line-height: 1.5; }
+    .header-brand-line { display:block; font-size:14px; font-weight:600; letter-spacing:1px; margin-bottom:10px; }
+    .header-price-line { display:inline-block; padding:7px 16px; border-radius:999px; background:rgba(255,255,255,.95); color:#A34E1B; font-size:14px; font-weight:700; letter-spacing:.2px; }
+    @media (max-width:480px) {
+      .header { padding:22px 14px 42px; }
+      .header h1 { font-size:24px; letter-spacing:1px; line-height:1.3; }
+      .header .header-subtitle { margin-top:6px; font-size:13px; }
+      .header .header-description { margin-top:9px; }
+      .header-brand-line { font-size:13px; margin-bottom:8px; }
+      .header-price-line { font-size:13px; padding:6px 13px; }
+    }
 
-.hide { display: none; }
-.notice {
-  background: #fff3df;
-  border-radius: 9px;
-  padding: 12px;
-  margin-bottom: 12px;
-  font-size: 14px;
-}
-.delivery {
-  border: 1px solid #eee;
-  border-radius: 10px;
-  padding: 12px;
-  margin-top: 12px;
-}
-.total { font-size: 22px; color: #c8692c; font-weight: bold; }
-/* 篩選條件與下方訂單卡片保持舒適間距 */
-#orderList, #paymentList, #shippingList { margin-top: 24px; }
-.dashboard-title { margin:16px 0 10px; font-size:18px; }
-.dashboard-title small { font-size:12px; font-weight:400; color:#777; margin-left:8px; }
-.dashboard-grid { margin-bottom:16px; }
-.dashboard-tile { width:100%; cursor:pointer; font-family:inherit; color:inherit; border:1px solid #eee; }
-.dashboard-tile small { display:block; color:#888; font-size:11px; margin-top:6px; }
-.dashboard-tile:focus-visible { outline:3px solid #d97836; }
-.dashboard-hint { background:#fff3df; padding:10px 12px; border-radius:9px; margin-bottom:12px; font-size:13px; }
-.season-box-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.season-box-grid .card { margin-bottom: 0; padding: 13px 6px; }
-.season-box-grid strong { font-size: clamp(20px, 5vw, 27px); }
-.season-box-grid span { display:block; font-size:12px; line-height:1.45; }
-.season-box-grid small { display:block; font-size:10px; color:#888; margin-top:5px; line-height:1.4; }
-@media print {
-  header, nav, button, .notice, .no-print { display: none !important; }
-  body { background: white; }
-  .card { box-shadow: none; border: 1px solid #ddd; }
-}
+    /* 清楚區分自取與宅配，預設不選擇 */
+    .delivery-toggle { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0; background:transparent; }
+    .delivery-btn { min-height:100px; padding:14px 8px; background:#FFFDF9; border:2px solid #FED7AA; border-radius:14px; color:#7C4A2D; font-size:15px; line-height:1.65; }
+    .delivery-btn.active { border-color:#EA580C; background:#FFF0DF; color:#C2410C; box-shadow:0 0 0 1px #EA580C; }
+    .delivery-btn .delivery-icon { display:block; font-size:26px; margin-bottom:4px; }
+    .delivery-btn .delivery-caption { display:block; font-size:12px; font-weight:400; }
+    .delivery-choice-warning { color:#B45309; font-size:13px; margin-top:10px; line-height:1.6; }
+    /* LINE 好友狀態提醒：不影響訂單送出 */
+    .preorder-friendship-card { background:#FFFFFF; border:1px solid #FED7AA; border-radius:16px; padding:16px; margin-bottom:16px; color:#5D4031; line-height:1.75; }
+    .preorder-friendship-card h3 { font-size:16px; color:#C2410C; margin-bottom:8px; }
+    .preorder-friendship-card p { font-size:14px; margin-bottom:12px; }
+    .friendship-card { max-width:520px; margin:0 auto 18px; padding:18px; background:#fff; border-radius:16px; text-align:left; color:#5D4031; line-height:1.75; }
+    .friendship-card h3 { font-size:16px; color:#C2410C; margin-bottom:7px; }
+    .friendship-card p { font-size:14px; margin:0 0 10px; }
+    .friendship-link { display:block; text-align:center; background:#06C755; color:#fff; border-radius:12px; padding:13px; font-weight:700; text-decoration:none; }
+    .friendship-card .friendship-small { font-size:12px; color:#80695B; margin:9px 0 0; }
 </style>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script>
-  const ADMIN_LIFF_ID = '2009767596-5QJw6URi';
-
-  async function initAdminLine() {
-  await liff.init({ liffId: ADMIN_LIFF_ID });
-
-  if (!liff.isLoggedIn()) {
-    liff.login();
-    return false;
-  }
-
-  return true;
-}
-
-async function getAdminLineUserId() {
-  if (!liff.isLoggedIn()) {
-    throw new Error('請先登入 LINE');
-  }
-
-  const profile = await liff.getProfile();
-  return profile.userId;
-}
-</script>
 </head>
-
 <body>
-<header>
-  <div class="brand-layout"><h1 class="brand-title">餘有榮焉 🍊 後台管理系統</h1></div>
-</header>
 
-<main>
-  <div class="notice">
-  🍊 餘有榮焉訂單管理系統<br>
-  訂單、收款及出貨資料會同步至 Google 試算表。
-  請確認資料正確後再送出。
+<!-- 訂購主畫面 -->
+<div id="main-screen">
+  <div class="header">
+    <div class="brand-kicker">餘有榮焉 <span aria-hidden="true">🍊</span></div>
+    <h1>砂糖橘預購登記</h1>
+    <p class="header-subtitle">2026｜苗栗公館</p>
+    <div class="header-description"><span class="header-brand-line">有你｜有餘🧡</span><span class="header-price-line">5 台斤／盒 · NT$400</span></div>
+  </div>
+  <div class="container">
+
+    <!-- 訂購前智慧好友提醒：僅確認未加入好友時顯示 -->
+    <section id="preorder-friendship-reminder" class="preorder-friendship-card" style="display:none" aria-live="polite">
+      <h3>💚 訂購前溫馨提醒</h3>
+      <p>您尚未加入「餘有榮焉」官方 LINE 好友。為了收到砂糖橘的採收、付款與取貨／出貨通知，建議先加入好友，再繼續填寫訂單。</p>
+      <a class="friendship-link" href="https://line.me/R/ti/p/@youyu" target="_blank" rel="noopener noreferrer">加入餘有榮焉官方 LINE 好友</a>
+      <p style="font-size:12px;color:#80695B;margin:10px 0 0">可先繼續訂購，加入好友不是送單的必要條件。</p>
+    </section>
+
+    <!-- 取貨方式 -->
+    <div class="card">
+      <h2><span class="step">01</span> 選擇取貨方式</h2>
+      <div class="delivery-toggle">
+        <button type="button" class="delivery-btn" onclick="setDelivery('自取')" id="btn-pickup" aria-pressed="false">
+          <span class="delivery-icon">📍</span>我要自己去拿
+          <span class="delivery-caption">苗栗公館自取</span>
+        </button>
+        <button type="button" class="delivery-btn" onclick="setDelivery('宅配')" id="btn-delivery" aria-pressed="false">
+          <span class="delivery-icon">🚛</span>我要寄到家裡
+          <span class="delivery-caption">新竹貨運宅配（另計運費）</span>
+        </button>
+      </div>
+      <p id="delivery-choice-warning" class="delivery-choice-warning" role="status">請先選擇自取或宅配，避免選錯取貨方式。</p>
+    </div>
+
+    <!-- 規格選擇 -->
+    <div class="card">
+      <h2><span class="step">02</span> 選擇訂購數量</h2>
+
+      <div class="spec-card" id="spec-card-0">
+        <div class="spec-header">
+          <div>
+            <div class="spec-name">🍊 砂糖橘 5斤裝</div>
+            <div class="spec-price">NT$ 400 / 盒</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="stepQty(0,-1)">&#x2212;</button>
+            <input class="qty-input" type="number" id="qty-0" value="0" min="0" oninput="inputQty(0,this.value)">
+            <button class="qty-btn" onclick="stepQty(0,1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <p id="empty-warning" style="color:#ff6b6b;font-size:13px;text-align:center;display:none;">
+        別忘了選購好吃的砂糖橘喔！
+      </p>
+    </div>
+
+    <!-- 收件資訊 -->
+    <div class="card">
+      <h2 id="contact-section-title"><span class="step">03</span> 填寫聯絡人資訊</h2>
+      <div class="field" style="margin-bottom:15px;">
+        <label>聯絡姓名 <span style="color:#B65D36">＊必填</span></label>
+        <input type="text" id="name" placeholder="請填寫姓名" oninput="syncBuyerIfSame()">
+      </div>
+      <div class="field" style="margin-bottom:15px;">
+        <label>手機號碼 <span style="color:#B65D36">＊必填</span></label>
+        <input type="text" id="phone" placeholder="09XX-XXX-XXX" maxlength="12" inputmode="numeric" oninput="syncBuyerIfSame()">
+      </div>
+      <div class="field" id="address-section" style="margin-bottom:15px;display:none;">
+        <label>宅配地址 <span style="color:#B65D36">＊必填</span></label>
+        <input type="text" id="address" placeholder="請填寫郵遞區號、縣市、區鄉鎮、路名與門牌" oninput="updatePriceDisplay()" aria-describedby="shipping-address-message">
+        <p id="saved-address-message" role="status" aria-live="polite" style="font-size:12px;margin-top:7px;color:#9A531E;display:none;"></p>
+        <p id="shipping-address-message" role="status" aria-live="polite" style="font-size:13px;margin-top:8px;color:#9A531E;"></p>
+      </div>
+
+      <div id="buyer-section" style="display:none;border-top:1px solid #FED7AA;padding-top:18px;margin-top:18px;">
+        <h2><span class="step">04</span> 訂購人資訊</h2>
+        <label style="display:flex;align-items:center;gap:9px;margin-bottom:15px;color:#7C3E18;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="buyer-same" onchange="toggleBuyerSame()" style="width:18px;height:18px;accent-color:#F97316;">
+          訂購人同收件人
+        </label>
+        <div class="field" style="margin-bottom:15px;">
+          <label>訂購人姓名 <span style="color:#B65D36">＊必填</span></label>
+          <input type="text" id="buyer-name" placeholder="請填寫訂購人姓名" oninput="syncBuyerIfSame()">
+        </div>
+        <div class="field" style="margin-bottom:15px;">
+          <label>訂購人手機 <span style="color:#B65D36">＊必填</span></label>
+          <input type="tel" id="buyer-phone" placeholder="09XX-XXX-XXX" maxlength="12" inputmode="numeric" oninput="syncBuyerIfSame()">
+        </div>
+      </div>
+
+      <div id="pickup-info-section" class="info-box pickup-info" style="display:none;">
+        📍 <b>自取地點：</b>苗栗縣公館鄉館東村和東街46號<br>
+        🕐 <b>自取時間：</b>採預約制，請於收到採收通知後，透過官方 LINE 與我們確認取貨日期及時間。<br>
+        🍊 <b>溫馨提醒：</b>因採收期間忙於果園作業，現場不一定有人員留守。為避免您白跑一趟，請務必事先預約並確認取貨時間，恕不接受未預約直接取貨。<br>
+        📞 <b>聯絡方式：</b>官方 LINE／JJ：0911936229<br>
+      </div>
+
+      <div id="delivery-info-section" class="info-box delivery-info" style="display:none;">
+        🚛 <b>新竹貨運宅配說明：</b><br>
+        📍 <b>以下運費僅適用新竹貨運配送台灣本島。</b><br>
+        📦 同一地址每 1～4 盒運費 NT$ 150；5～8 盒 NT$ 300，以此類推，不同地址分別計費。<br>
+        🏝️ <b>離島配送請先透過官方 LINE 聯繫我們，確認運費與配送方式後再安排訂購。</b><br>
+        💳 目前無須付款，待採收及供貨確認後，將由官方 LINE 另行通知付款與出貨資訊<br>
+        🕐 出貨後約 1–2 個工作天到貨（實際配送依物流狀況為準）<br>
+        📞 聯絡電話：JJ：0911936229<br>
+      </div>
+
+      <div class="field" style="margin-top:15px;">
+        <label>備註需求</label>
+        <textarea id="note" rows="2" placeholder="如有宅配收件需求或其他事項，請在此告知（實際安排以官方 LINE 確認為準）"></textarea>
+      </div>
+    </div>
+
+    <p style="font-size:12px;line-height:1.8;color:#80695B;padding:0 5px 12px;">🍊 預購商品為農產品，實際採收與出貨時間將依產季狀況安排，相關通知請留意官方 LINE。</p>
+
+    <!-- 金額顯示 -->
+    <div class="price-display" id="price-display">
+      <div class="price-total"><span>總計金額</span><span>NT$ 0</span></div>
+    </div>
+    <button class="submit-btn" id="submit-btn" onclick="submitOrder()">
+      確認送出預購單 →
+    </button>
+  </div>
 </div>
 
-  <h2 class="dashboard-title">今日營運總覽 <small id="dashboardDate"></small></h2>
-  <div class="grid dashboard-grid">
-    <button type="button" class="card summary dashboard-tile" data-dashboard="new"><strong id="todayNewCount">0</strong><span>今日新增訂單</span><small>今天建立的訂單</small></button>
-    <button type="button" class="card summary dashboard-tile" data-dashboard="ship"><strong id="todayShipCount">0</strong><span>今日預計出貨</span><small id="todayShipDetail">0 筆配送 · 0 盒</small></button>
-    <button type="button" class="card summary dashboard-tile" data-dashboard="pickup"><strong id="todayPickupCount">0</strong><span>今日預計自取</span><small id="todayPickupDetail">0 筆配送 · 0 盒</small></button>
-    <button type="button" class="card summary dashboard-tile" data-dashboard="unpaid"><strong id="todayUnpaidCount">0</strong><span>目前待收款</span><small>不限訂單建立日期</small></button>
+<!-- 訂單成功畫面 -->
+<div id="success-screen">
+  <div class="success-icon">🍊</div>
+  <div class="success-title">預購登記成功！</div>
+  <div class="success-sub">餘有榮焉｜2026 砂糖橘</div>
+  <div class="order-summary-card" id="success-summary"></div>
+  <div id="friendship-reminder" class="friendship-card" style="display:none" aria-live="polite"></div>
+  <div class="screenshot-hint">
+    <strong>📸 請截圖保存此頁面作為訂購紀錄</strong>
+    如有問題請聯繫：JJ：0911936229
   </div>
-  <!-- 本產季盒數統計：直接使用與配送明細相同的資料來源 -->
-  <h2 class="dashboard-title">本產季訂單盒數統計</h2>
-  <div class="grid season-box-grid" aria-label="本產季訂單盒數統計">
-    <div class="card summary"><strong id="seasonOrderedBoxes">0</strong><span>累計預購盒數</span><small>宅配＋自取</small></div>
-    <div class="card summary"><strong id="seasonShippedBoxes">0</strong><span>累計已出貨／交貨盒數</span><small>宅配＋自取</small></div>
-    <div class="card summary"><strong id="seasonPendingBoxes">0</strong><span>尚未出貨／交貨盒數</span><small>累計預購－累計已出貨</small></div>
-  </div>
-  <div id="dashboardHint" class="dashboard-hint hide"></div>
-
-  <nav>
-    <button class="active" data-page="orders">訂單</button>
-    <button data-page="payments">收款</button>
-    <button data-page="shipping">出貨</button>
-    <button data-page="create">＋新增</button>
-  </nav>
-
-  <section id="orders">
-    <h2>訂單管理</h2>
-    <input id="search" placeholder="搜尋訂購人、收件人、電話、地址或訂單編號">
-    <label for="orderStatusFilter">訂單狀態</label>
-    <select id="orderStatusFilter"><option value="all">全部</option><option value="pending" selected>未完成</option><option value="completed">已完成</option></select>
-    <label for="orderTypeFilter">配送方式</label>
-    <select id="orderTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
-    <label for="customerSourceFilter">客戶來源</label>
-    <select id="customerSourceFilter"><option value="">全部客戶來源</option><option value="待分類">待分類</option></select>
-    <div id="orderList"></div>
-  </section>
-
-  <section id="payments" class="hide">
-    <h2>收款管理</h2>
-    <label for="paymentFilter">收款狀態</label>
-    <select id="paymentFilter"><option value="all">全部</option><option value="unpaid" selected>未收款</option><option value="paid">已收款</option></select>
-    <label for="paymentTypeFilter">配送方式</label>
-    <select id="paymentTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
-    <div id="paymentList"></div>
-  </section>
-
-  <section id="shipping" class="hide">
-    <div class="row">
-      <h2>出貨管理</h2>
-      <button class="primary" type="button" id="shippingPrintButton" onclick="printShippingList()" style="flex-shrink:0;font-weight:700">🖨️ 列印出貨清單</button>
-    </div>
-    <label for="shippingFilter">出貨狀態</label>
-    <select id="shippingFilter"><option value="all">全部</option><option value="pending" selected>未出貨</option><option value="shipped">已出貨</option></select>
-    <label for="shippingTypeFilter">配送方式</label>
-    <select id="shippingTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
-    <div id="shippingList"></div>
-  </section>
-
-  <section id="create" class="hide">
-    <h2>新增電話／口頭訂單</h2>
-    <div class="card">
-      <label>訂購人姓名</label>
-      <input id="buyerName" placeholder="請輸入姓名">
-
-      <label>訂購人電話</label>
-      <input id="buyerPhone" type="tel" placeholder="09xxxxxxxx">
-
-      <label>訂單備註</label>
-      <textarea id="orderNote"></textarea>
-
-      <div id="deliveryForms"></div>
-
-      <button class="secondary" onclick="addDelivery()">
-        ＋ 新增宅配地址／自取
-      </button>
-
-      <p class="muted" id="pricingNotice">
-        砂糖橘每盒 NT$400；宅配每 4 盒一件，每件 NT$150。
-        不同宅配地址分開計算運費。
-      </p>
-
-      <p class="total" id="estimate">NT$0</p>
-
-      <button class="primary" style="width:100%" onclick="createOrder()">
-        建立訂單
-      </button>
-    </div>
-  </section>
-</main>
+  <button class="back-btn" onclick="location.reload()">繼續訂購</button>
+</div>
 
 <script>
-"use strict";
-
-// 正式管理後台：訂單資料以後端 Google Sheets 為準。
-let PRICE = 400;
-let BOXES_PER_PIECE = 4;
-let SHIPPING_FEE = 150;
-
-const $ = id => document.getElementById(id);
-
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[char]);
-}
-
-function money(value) {
-  return Number.isFinite(Number(value)) ? "NT$" + Number(value).toLocaleString("zh-TW") : "金額待核對";
-}
-
-function today() {
-  return new Date().toLocaleDateString("sv-SE", {
-    timeZone: "Asia/Taipei"
-  });
-}
-
-function makeId() {
-  return "SO-" + Date.now() + "-" +
-    Math.random().toString(36).slice(2, 7).toUpperCase();
-}
-
-
-
-const ADMIN_SESSION_KEY = 'sugarorangeAdminSession';
-
-function getAdminSession() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
-
-    if (
-      !saved ||
-      !saved.token ||
-      !saved.expires ||
-      saved.expires <= Math.floor(Date.now() / 1000)
-    ) {
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      return null;
-    }
-
-    return saved;
-  } catch {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
-    return null;
-  }
-}
-
-function saveAdminSession(data) {
-  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
-    token: data.token,
-    expires: data.expires,
-    lineUserId: data.lineUserId
-  }));
-}
-
-function clearAdminSession() {
-  localStorage.removeItem(ADMIN_SESSION_KEY);
-}  
-async function requireAdminCredentials() {
-  const savedSession = getAdminSession();
-  if (savedSession) return { 'X-Admin-Session': savedSession.token };
-
-  const password = adminPassword || window.prompt('管理員登入已到期，請重新輸入管理員密碼');
-  if (!password) throw new Error('尚未輸入管理員密碼，操作已取消');
-
-  // 先重新建立 7 天登入憑證，成功後才允許修改資料。
-  const session = await loginAdminForSevenDays(password);
-  adminPassword = '';
-  sessionStorage.removeItem('adminPassword');
-  return { 'X-Admin-Session': session.token };
-}
-
-async function loginAdminForSevenDays(password) {
-  const response = await fetch(
-    'https://sugarorange-api.vercel.app/api/order',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Password': password,
-        'Authorization': 'Bearer ' + (liff.getAccessToken() || '')
-      },
-      body: JSON.stringify({
-        action: 'adminLogin'
-      })
-    }
-  );
-
-  const result = await response.json();
-
-  if (!response.ok || result.status !== 'success') {
-    throw new Error(result.message || '管理員登入失敗');
-  }
-
-  saveAdminSession(result);
-  return result;
-}  
-let adminPassword = sessionStorage.getItem('adminPassword') || '';
-async function loadOrdersFromGoogle() {
-  const savedSession = getAdminSession();
-const password = savedSession ? '' : (adminPassword || window.prompt('請輸入管理員密碼'));
-
-  if (!savedSession && !password) {
-  throw new Error('尚未輸入管理員密碼');
-}
-
-  const response = await fetch(
-    'https://sugarorange-api.vercel.app/api/order?action=getOrders',
-    {
-      method: 'GET',
-      headers: {
-  ...(savedSession
-    ? { 'X-Admin-Session': savedSession.token }
-    : { 'X-Admin-Password': password }),
-  'Authorization': 'Bearer ' + (liff.getAccessToken() || '')
-}
-    }
-  );
-
-  const result = await response.json();
-
-  if (!response.ok || result.status !== 'success') {
-  if (savedSession && (response.status === 401 || response.status === 403)) {
-    clearAdminSession();
-    throw new Error('管理員登入已失效，請重新整理此頁面並輸入密碼。');
-  }
-
-  throw new Error(result.message || '讀取訂單失敗');
-}
-  
-  if (!savedSession && password) {
-  await loginAdminForSevenDays(password);
-}
-
-adminPassword = '';
-sessionStorage.removeItem('adminPassword');
-  
-  return result;
-  }
-
-
-let orders = [];
-
-
-function deliveryTotal(d) {
-  return d.amount !== undefined && d.amount !== null
-    ? Number(d.amount)
-    : NaN;
-}
-
-function allDeliveries() {
-  return orders.flatMap(order =>
-    order.deliveries.map(d => ({ ...d, order }))
-  );
-}
-
-function taiwanToday() {
-  return new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-}
-function normalizedDate(value) {
-  if (!value) return '';
-  const str = String(value).trim();
-  const match = str.match(/^(\d{4})[-\/]([01]?\d)[-\/]([0-3]?\d)/);
-  if (match) return `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`;
-  return '';
-}
-function todayDashboardData() {
-  const today = taiwanToday();
-  const ds = allDeliveries();
-  const ship = ds.filter(d=>d.type==='宅配' && !d.shipped && normalizedDate(d.shipDate)===today);
-  const pickup = ds.filter(d=>d.type==='自取' && !d.shipped && normalizedDate(d.shipDate)===today);
-  return {today, newly:orders.filter(o=>normalizedDate(o.createdAt)===today),ship,pickup,unpaid:ds.filter(d=>!d.paid)};
-}
-function renderSummary() {
-  const data=todayDashboardData();
-  // 與庫存管理 Q3～Q5 同一統計邏輯：配送明細 H 欄盒數，N 欄「已出貨」。
-  // 自取完成交貨時，後端同樣將 N 欄記錄為「已出貨」。
-  const deliveries=allDeliveries();
-  const orderedBoxes=deliveries.reduce((sum,d)=>sum+(Number(d.qty)||0),0);
-  const shippedBoxes=deliveries.reduce((sum,d)=>sum+(d.shipped?(Number(d.qty)||0):0),0);
-  $('seasonOrderedBoxes').textContent=orderedBoxes.toLocaleString('zh-TW');
-  $('seasonShippedBoxes').textContent=shippedBoxes.toLocaleString('zh-TW');
-  $('seasonPendingBoxes').textContent=(orderedBoxes-shippedBoxes).toLocaleString('zh-TW');
-  $('dashboardDate').textContent=data.today;
-  $('todayNewCount').textContent=data.newly.length+' 筆';
-  $('todayShipCount').textContent=data.ship.length+' 筆';
-  $('todayPickupCount').textContent=data.pickup.length+' 筆';
-  $('todayUnpaidCount').textContent=data.unpaid.length+' 筆';
-  $('todayShipDetail').textContent=data.ship.length+' 筆配送 · '+data.ship.reduce((n,d)=>n+d.qty,0)+' 盒';
-  $('todayPickupDetail').textContent=data.pickup.length+' 筆配送 · '+data.pickup.reduce((n,d)=>n+d.qty,0)+' 盒';
-}
-function openDashboardCategory(category) {
-  const data=todayDashboardData();
-  const hint=$('dashboardHint');
-  const q=$('search');
-  q.value='';
-  $('customerSourceFilter').value='';
-  if(category==='new') {
-    switchPage('orders');
-    $('orderStatusFilter').value='all';
-    $('orderTypeFilter').value='all';
-    dashboardSelectedOrderIds=new Set(data.newly.map(o=>o.id));
-    dashboardSelectedDeliveryIds=null;
-    hint.textContent='目前顯示今天新增的訂單。清除搜尋或更改篩選條件即可返回一般訂單清單。';
-  } else if(category==='unpaid') {
-    switchPage('payments');
-    $('paymentFilter').value='unpaid';
-    $('paymentTypeFilter').value='all';
-    dashboardSelectedOrderIds=null;dashboardSelectedDeliveryIds=null;
-    hint.textContent='已切換至所有待收款配送。';
-  } else {
-    switchPage('orders');
-    $('orderStatusFilter').value='all';
-    $('orderTypeFilter').value=category==='ship'?'宅配':'自取';
-    dashboardSelectedOrderIds=null;
-    dashboardSelectedDeliveryIds=new Set((category==='ship'?data.ship:data.pickup).map(d=>d.id));
-    hint.textContent=category==='ship'?'目前顯示今天預計出貨、尚未完成的配送。':'目前顯示今天預計自取、尚未交貨的配送。';
-  }
-  hint.classList.remove('hide');
-  renderOrders();renderPayments();
-  document.querySelector('nav').scrollIntoView({behavior:'smooth',block:'start'});
-}
-let dashboardSelectedOrderIds=null;
-let dashboardSelectedDeliveryIds=null;
-function clearDashboardSelection() {
-  dashboardSelectedOrderIds=null;dashboardSelectedDeliveryIds=null;
-  $('dashboardHint').classList.add('hide');
-}
-// 訂單管理以每一筆配送為單位篩選與操作，避免多地址訂單誤操作。
-// X 欄客戶來源：複選以逗號分隔，分類名稱中的頓號保留。
-function parseCustomerSources(value) {
-  return [...new Set(String(value || '').split(/[,，\r\n]+/).map(x => x.trim()).filter(x => x && x !== '待分類'))];
-}
-function matchesCustomerSource(order, selected) {
-  const sources = order.customerSources || [];
-  return !selected || (selected === '待分類' ? sources.length === 0 : sources.includes(selected));
-}
-function renderCustomerSourceFilter() {
-  const select = $('customerSourceFilter');
-  const previous = select.value;
-  const options = [...new Set(orders.flatMap(o => o.customerSources || []))].sort((a,b) => a.localeCompare(b, 'zh-Hant'));
-  select.innerHTML = '<option value="">全部客戶來源</option><option value="待分類">待分類</option>' +
-    options.map(source => `<option value="${escapeHTML(source)}">${escapeHTML(source)}</option>`).join('');
-  select.value = previous === '待分類' || options.includes(previous) ? previous : '';
-}
-function customerSourceBadges(order) {
-  const sources = order.customerSources || [];
-  return (sources.length ? sources : ['待分類']).map(source => `<span class="pill">${escapeHTML(source)}</span>`).join(' ');
-}
-
-function orderCard(order, visibleDeliveries) {
-  const boxes = order.deliveries.reduce((sum,d)=>sum+d.qty,0);
-  const total = order.deliveries.reduce((sum,d)=>sum+deliveryTotal(d),0);
-  return `
-    <div class="card">
-      <h3>訂購人：${escapeHTML(order.buyer)}</h3>
-      <p>客戶來源：${customerSourceBadges(order)}</p>
-      <p class="muted">訂購電話：${escapeHTML(order.phone)}<br>訂單編號：${escapeHTML(order.id)}</p>
-      <p>整筆訂單：${boxes} 盒 · <strong>${money(total)}</strong></p>
-      ${visibleDeliveries.map(d=>`
-        <div class="delivery">
-          <div class="row"><strong>${escapeHTML(d.type)} · ${d.qty} 盒</strong></div>
-          ${d.type==='宅配' ? `<p>收件人：${escapeHTML(d.name || order.buyer)}<br>收件電話：${escapeHTML(d.phone || order.phone)}<br>地址：${escapeHTML(d.address)}</p>` : `<p>取貨人：${escapeHTML(order.buyer)}<br>電話：${escapeHTML(order.phone)}</p>`}
-          <p>應收：<strong>${money(deliveryTotal(d))}</strong>（含運費 ${money(d.shipping)}）</p>
-          <div class="status-line">
-            <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid?'已收款':'待收款'}</span>
-            <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type==='自取'?'已交貨':'已出貨') : (d.type==='自取'?'待交貨':'待出貨')}</span>
-          </div>
-          <div class="no-print">
-            <label>預計出貨／自取日期</label>
-            <input type="date" value="${escapeHTML(d.shipDate)}" data-shipdate="${escapeHTML(d.id)}" ${d.shipped?'disabled':''}>
-            <div class="actions" style="margin-top:10px">
-              <button class="${d.paid?'secondary':'primary'}" data-payment="${escapeHTML(d.id)}">${d.paid?'取消收款確認':'確認全額收款'}</button>
-              <button class="${d.shipped?'secondary':'primary'}" data-shipped="${escapeHTML(d.id)}">${d.shipped?(d.type==='自取'?'取消已交貨':'取消已出貨'):(d.type==='自取'?'確認已交貨':'確認已出貨')}</button>
-            </div>
-            ${d.type==='自取'&&!d.paid&&!d.shipped ? `<button class="primary" style="margin-top:8px;width:100%" data-pickup-complete="${escapeHTML(d.id)}">收款＋交貨一次完成</button>`:''}
-          </div>
-        </div>
-      `).join('')}
-      ${order.note?`<p class="muted">備註：${escapeHTML(order.note)}</p>`:''}
-    </div>`;
-}
-
-function renderOrders() {
-  const q = $('search').value.trim().toLowerCase();
-  const status = $('orderStatusFilter').value;
-  const type = $('orderTypeFilter').value;
-  const selectedSource = $('customerSourceFilter').value;
-  const cards = orders.map(order => {
-    if (!matchesCustomerSource(order, selectedSource)) return '';
-    const visible = order.deliveries.filter(d => {
-      if(dashboardSelectedOrderIds && !dashboardSelectedOrderIds.has(order.id)) return false;
-      if(dashboardSelectedDeliveryIds && !dashboardSelectedDeliveryIds.has(d.id)) return false;
-      const matchesType = type==='all'||d.type===type;
-      const completed = d.paid && d.shipped;
-      const matchesStatus = status==='all'||(status==='completed'?completed:!completed);
-      const matchesText = !q || [order.id,order.buyer,order.phone,d.name,d.phone,d.address]
-        .some(v=>String(v||'').toLowerCase().includes(q));
-      return matchesType&&matchesStatus&&matchesText;
-    });
-    return visible.length ? orderCard(order,visible) : '';
-  }).filter(Boolean);
-  $('orderList').innerHTML = cards.join('') || '<div class="card">沒有符合條件的訂單。</div>';
-}
-
-function findDelivery(id) {
-  for (const order of orders) {
-    const delivery = order.deliveries.find(d => d.id === id);
-    if (delivery) return delivery;
-  }
-  return null;
-}
-
-
-async function updatePayment(id) {
-  const d = findDelivery(id);
-  if (!d) return;
-
-  if (d.paid && d.shipped && d.type === "宅配") {
-    alert("宅配已出貨，請先核對後再調整收款。");
-    return;
-  }
-
-  const question = d.paid
-    ? "確定取消這筆收款確認？"
-    : "確定已收到這筆配送的全額款項？";
-
-  if (!confirm(question)) return;
-
-  try {
-    const response = await fetch(
-      "https://sugarorange-api.vercel.app/api/order",
-      {
-        method: "POST",
-        headers: {
-  "Content-Type": "application/json",
-  ...await requireAdminCredentials(),
-  "Authorization": "Bearer " + (liff.getAccessToken() || "")
-},
-        body: JSON.stringify({
-          action: "markPaid",
-          detailId: id,
-          paid: !d.paid
-        })
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok || result.status !== "success") {
-      if (response.status === 401 || response.status === 403) clearAdminSession();
-      throw new Error(result.message || "更新收款失敗");
-    }
-
-    d.paid = !d.paid;
-    renderAll();
-    alert("收款狀態已更新至 Google 試算表");
-  } catch (error) {
-    alert("更新失敗：" + error.message);
-  }
-}
-
-
-function displayBuyer(d) {
-  return d.order.buyer || d.name || "姓名未填";
-}
-
-function displayRecipient(d) {
-  return d.name && d.name !== d.order.buyer ? d.name : "";
-}
-
-function displayPhone(d) {
-  return d.phone || d.order.phone || "電話未填";
-}
-
-function renderPayments() {
-  const filter = $("paymentFilter").value;
-  const typeFilter = $("paymentTypeFilter").value;
-  const ds = allDeliveries().filter(d =>
-    (filter === "all" || (filter === "paid" ? d.paid : !d.paid)) &&
-    (typeFilter === "all" || d.type === typeFilter)
-  );
-
-  $("paymentList").innerHTML = ds.map(d => `
-    <div class="card">
-      <h3>訂購人：${escapeHTML(displayBuyer(d))}</h3>
-      <p class="muted">
-        電話：${escapeHTML(d.order.phone || displayPhone(d))}
-        ${displayRecipient(d) ? ` · 收件人：${escapeHTML(displayRecipient(d))}` : ""}<br>
-        ${escapeHTML(d.order.id)} ·
-        ${escapeHTML(d.type)} · ${d.qty} 盒
-      </p>
-      <p>
-        應收金額：
-        <strong>${money(deliveryTotal(d))}</strong>
-      </p>
-      <div class="status-line">
-        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid ? "已收款" : "待收款"}</span>
-        <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type === "自取" ? "已交貨" : "已出貨") : (d.type === "自取" ? "待交貨" : "待出貨")}</span>
-      </div>
-      <div class="actions" style="margin-top:10px">
-        <button class="${d.paid ? "secondary" : "primary"}" data-payment="${escapeHTML(d.id)}">
-          ${d.paid ? "取消收款確認" : "確認全額收款"}
-        </button>
-        <button class="${d.shipped ? "secondary" : "primary"}" data-shipped="${escapeHTML(d.id)}">
-          ${d.shipped ? (d.type === "自取" ? "取消已交貨" : "取消已出貨") : (d.type === "自取" ? "確認已交貨" : "確認已出貨")}
-        </button>
-      </div>
-      ${d.type === "自取" && !d.paid && !d.shipped ? `<button class="primary" data-pickup-complete="${escapeHTML(d.id)}" style="margin-top:8px;width:100%">收款＋交貨一次完成</button>` : ""}
-    </div>
-  `).join("");
-}
-
-
-const updatingShipDates = new Set();
-async function updateShipDate(id, date) {
-  const d = findDelivery(id);
-  if (!d || d.shipped || d.shipDate === date || updatingShipDates.has(id)) return;
-  updatingShipDates.add(id);
-
-  try {
-    const response = await fetch(
-      "https://sugarorange-api.vercel.app/api/order",
-      {
-        method: "POST",
-        headers: {
-  "Content-Type": "application/json",
-  ...await requireAdminCredentials(),
-  "Authorization": "Bearer " + (liff.getAccessToken() || "")
-},
-        body: JSON.stringify({
-          action: "setShipDate",
-          detailId: id,
-          shipDate: date
-        })
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok || result.status !== "success") {
-      if (response.status === 401 || response.status === 403) clearAdminSession();
-      throw new Error(result.message || "更新出貨日期失敗");
-    }
-
-    d.shipDate = date;
-    renderAll();
-    alert("出貨日期已更新至 Google 試算表");
-  } catch (error) {
-    renderAll();
-    alert("更新失敗：" + error.message);
-  } finally {
-    updatingShipDates.delete(id);
-  }
-}
-
-
-
-async function updateShipping(id) {
-  const d = findDelivery(id);
-  if (!d) return;
-
-  if (!d.shipped) {
-    if (!d.shipDate) {
-      alert("請先安排出貨日期。");
-      return;
-    }
-
-    if (d.type === "宅配" && !d.paid &&
-        !confirm("提醒：這筆宅配訂單尚未收款。確定要先出貨、之後再追蹤收款嗎？")) {
-      return;
-    }
-  }
-
-  const shipped = !d.shipped;
-
-  if (!confirm(
-    shipped
-      ? "確定這筆配送已經出貨？"
-      : "確定取消已出貨標記？"
-  )) return;
-
-  try {
-    const response = await fetch(
-      "https://sugarorange-api.vercel.app/api/order",
-      {
-        method: "POST",
-        headers: {
-  "Content-Type": "application/json",
-  ...await requireAdminCredentials(),
-  "Authorization": "Bearer " + (liff.getAccessToken() || "")
-},
-        body: JSON.stringify({
-          action: "markShipped",
-          detailId: id,
-          shipped: shipped
-        })
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok || result.status !== "success") {
-      if (response.status === 401 || response.status === 403) clearAdminSession();
-      throw new Error(result.message || "更新出貨失敗");
-    }
-
-    d.shipped = shipped;
-    renderAll();
-
-    alert("出貨狀態已更新至 Google 試算表");
-  } catch (error) {
-    alert("更新失敗：" + error.message);
-  }
-}
-
-
-// 現場自取：一次確認收款及交貨；每一步由後端寫入 Sheets，失敗時提示人工核對。
-async function completePickup(id, button) {
-  const d = findDelivery(id);
-  if (!d || d.type !== "自取" || d.paid || d.shipped) return;
-  const buyerName = orders.find(o => o.deliveries.some(item => item.id === id))?.buyer || d.name || "姓名未填";
-  if (!confirm(`確定「${buyerName}」已現場全額付款並領取 ${d.qty} 盒？\n應收：${money(deliveryTotal(d))}`)) return;
-  button.disabled = true;
-  let completed = 0;
-  try {
-    const headers = {
-      "Content-Type": "application/json",
-      ...await requireAdminCredentials(),
-      "Authorization": "Bearer " + (liff.getAccessToken() || "")
-    };
-    const call = async (action, extra) => {
-      const response = await fetch("https://sugarorange-api.vercel.app/api/order", {
-        method: "POST", headers,
-        body: JSON.stringify({action, detailId:id, ...extra})
-      });
-      const result = await response.json();
-      if (!response.ok || result.status !== "success") {
-        if (response.status === 401 || response.status === 403) clearAdminSession();
-        throw new Error(result.message || action + " 更新失敗");
-      }
-    };
-    if (!d.shipDate) {
-      const date = today();
-      await call("setShipDate", {shipDate:date});
-      d.shipDate = date;
-    }
-    await call("markPaid", {paid:true});
-    d.paid = true;
-    completed = 1;
-    await call("markShipped", {shipped:true});
-    d.shipped = true;
-    completed = 2;
-    renderAll();
-    alert("已完成收款及交貨，資料已同步 Google Sheets。");
-  } catch (error) {
-    renderAll();
-    alert((completed ? "收款已更新，但交貨更新未完成。" : "快速交貨未全部完成。") +
-      "\n請重新整理並核對 Google Sheets，避免重複操作。\n原因：" + error.message);
-  } finally {
-    button.disabled = false;
-  }
-}
-
-function printShippingList() {
-  // 在後台直接顯示列印預覽，避免 LINE WebView 封鎖彈出視窗。
-  // 依照出貨頁目前的篩選條件輸出，不含後台操作按鈕與登入資料。
-  const filter = $("shippingFilter").value;
-  const typeFilter = $("shippingTypeFilter").value;
-  const ds = allDeliveries().filter(d =>
-    (filter === "all" || (filter === "shipped" ? d.shipped : !d.shipped)) &&
-    (typeFilter === "all" || d.type === typeFilter)
-  );
-  const rows = ds.map((d, i) => `<tr>
-    <td>${i + 1}</td>
-    <td>${escapeHTML(d.order.id)}</td>
-    <td>${escapeHTML(displayBuyer(d))}</td>
-    <td>${escapeHTML(d.order.phone || displayPhone(d))}</td>
-    <td>${escapeHTML(d.type)}</td>
-    <td>${escapeHTML(displayRecipient(d) || "—")}</td>
-    <td>${escapeHTML(displayPhone(d) || "—")}</td>
-    <td>${escapeHTML(d.address || (d.type === "自取" ? "自取" : "—"))}</td>
-    <td>${Number(d.qty) || 0}</td>
-    <td>${escapeHTML(d.shipDate || "—")}</td>
-    <td>${d.paid ? "已收款" : "未收款"}／${d.shipped ? "已出貨" : "未出貨"}</td>
-    <td class="note-cell">${escapeHTML(d.order.note || "—")}</td>
-    <td class="note-cell">${escapeHTML(d.note || "—")}</td>
-  </tr>`).join("");
-  const html = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>餘有榮焉－出貨列印表</title><style>
-    body{font-family:Arial,"Microsoft JhengHei",sans-serif;color:#333;padding:16px}
-    h1{text-align:center;font-size:22px}p{text-align:center;font-size:13px}
-    table{width:100%;border-collapse:collapse;font-size:11px;table-layout:auto}
-    th,td{border:1px solid #bbb;padding:5px;overflow-wrap:anywhere;word-break:break-word;vertical-align:top}
-    .note-cell{white-space:pre-wrap;min-width:85px;max-width:180px}
-    th{background:#f4eee8}thead{display:table-header-group}
-    tr{break-inside:avoid} .toolbar{margin-bottom:16px;text-align:center}
-    button{padding:10px 16px;margin:4px;border:0;border-radius:6px;background:#d97836;color:white}
-    @page{size:A4 landscape;margin:10mm}
-    @media print{.toolbar{display:none}body{padding:0}}
-    </style></head><body>
-    <div class="toolbar"><button onclick="window.print()">列印／另存 PDF</button>
-    <span>若在 LINE 中無法列印，請以 Safari／Chrome 開啟此檔案。</span></div>
-    <h1>餘有榮焉｜出貨清單</h1>
-    <p>出貨狀態：${escapeHTML($("shippingFilter").selectedOptions[0].textContent)}　
-    配送方式：${escapeHTML($("shippingTypeFilter").selectedOptions[0].textContent)}　
-    共 ${ds.length} 筆</p>
-    <table><thead><tr><th>序</th><th>訂單編號</th><th>訂購人</th><th>訂購電話</th><th>方式</th><th>收件人</th><th>收件電話</th><th>地址</th><th>盒數</th><th>預計日期</th><th>狀態</th><th>客戶備註</th><th>配送備註</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="13">目前篩選條件下沒有出貨資料</td></tr>'}</tbody></table>
-    </body></html>`;
-  // 不依賴 window.open 或自動下載：點擊後一定先顯示可見的預覽介面。
-  let panel = document.getElementById('printPreviewPanel');
-  if (!panel) {
-    panel = document.createElement('div');
-    panel.id = 'printPreviewPanel';
-    panel.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#f7f5f0;display:flex;flex-direction:column;';
-    panel.innerHTML = `<div style="padding:10px;background:#fff;border-bottom:1px solid #ddd;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <strong style="margin-right:auto">出貨清單預覽</strong>
-      <button type="button" class="primary" id="previewPrint">列印／存 PDF</button>
-      <button type="button" class="secondary" id="previewDownload">下載 HTML</button>
-      <button type="button" class="secondary" id="previewClose">關閉</button>
-      </div>
-      <p style="margin:6px 12px;font-size:12px;color:#666">若 LINE 無法叫出列印視窗，請按「下載 HTML」，用 Safari／Chrome 開啟後列印。含客戶個資，請妥善保管。</p>
-      <iframe title="出貨清單預覽" id="printPreviewFrame" style="width:100%;flex:1;border:0;background:white"></iframe>`;
-    document.body.appendChild(panel);
-    document.getElementById('previewClose').addEventListener('click', () => { panel.style.display='none'; });
-  }
-  panel.style.display = 'flex';
-  const frame = document.getElementById('printPreviewFrame');
-  frame.srcdoc = html;
-  document.getElementById('previewPrint').onclick = () => {
-    try { frame.contentWindow.focus(); frame.contentWindow.print(); }
-    catch(e) { alert('此瀏覽器不支援直接列印，請按「下載 HTML」，改用 Safari 或 Chrome 開啟。'); }
-  };
-  document.getElementById('previewDownload').onclick = () => {
+  var LIFF_ID  = '2009767596-nZiSJohI';
+  var API_URL  = 'https://sugarorange-api.vercel.app/api/order';
+  var PICKUP_ADDRESS = '苗栗縣公館鄉館東村和東街46號';
+
+  var SPECS = [
+    { name: '砂糖橘 5斤裝', price: 400, soldout: false }
+  ];
+
+  var qtys = [0];
+  var deliveryType = '';
+  var lineName = '';
+  var lineUserId = '';
+  var lineAccessToken = '';
+  var sending = false;
+  var liffInitPromise = null;
+  var orderSubmitted = false;
+  var LIFF_ENTRY_URL = 'https://liff.line.me/2009767596-nZiSJohI';
+
+  var OFFICIAL_LINE_FRIEND_URL = 'https://line.me/R/ti/p/@youyu';
+
+  // 訂購前僅在 LINE 明確回報「不是好友」時顯示；查詢失敗不猜測狀態。
+  async function showPreorderFriendshipReminder() {
+    var box = document.getElementById('preorder-friendship-reminder');
+    if (!box) return;
+    box.style.display = 'none';
     try {
-      const blob = new Blob([html], { type:'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href=url;
-      a.download='餘有榮焉_出貨列印表_'+taiwanToday()+'.html';
-      document.body.appendChild(a);a.click();a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),60000);
-    } catch(e) { alert('下載失敗：'+e.message+'。請改用 Safari 或 Chrome 開啟後台。'); }
-  };
-}
-
-function renderShipping() {
-  const filter = $("shippingFilter").value;
-  const typeFilter = $("shippingTypeFilter").value;
-  const ds = allDeliveries().filter(d =>
-    (filter === "all" || (filter === "shipped" ? d.shipped : !d.shipped)) &&
-    (typeFilter === "all" || d.type === typeFilter)
-  );
-
-  $("shippingList").innerHTML = ds.map(d => `
-    <div class="card">
-      <h3>訂購人：${escapeHTML(displayBuyer(d))} · ${d.qty} 盒</h3>
-      <p class="muted">
-        ${escapeHTML(d.order.id)} ·
-        ${escapeHTML(d.type)}
-      </p>
-      <p>
-        訂購電話：${escapeHTML(d.order.phone || displayPhone(d))}<br>
-        ${displayRecipient(d) ? `收件人：${escapeHTML(displayRecipient(d))}<br>` : ""}
-        ${d.type === "宅配" ? `收件電話：${escapeHTML(displayPhone(d))}<br>地址：${escapeHTML(d.address)}` : "自取"}
-      </p>
-      <div class="status-line">
-        <span class="pill ${d.paid ? 'status-done' : 'status-pending'}">${d.paid ? "已收款" : "待收款"}</span>
-        <span class="pill ${d.shipped ? 'status-done' : 'status-pending'}">${d.shipped ? (d.type === "自取" ? "已交貨" : "已出貨") : (d.type === "自取" ? "待交貨" : "待出貨")}</span>
-      </div>
-      <div class="no-print">
-        <label>預計出貨／自取日期</label>
-        <input
-          type="date"
-          value="${escapeHTML(d.shipDate)}"
-          data-shipdate="${escapeHTML(d.id)}"
-          ${d.shipped ? "disabled" : ""}>
-        <p></p>
-        <div class="actions" style="margin-top:10px">
-          <button class="${d.paid ? "secondary" : "primary"}" data-payment="${escapeHTML(d.id)}">
-            ${d.paid ? "取消收款確認" : "確認全額收款"}
-          </button>
-          <button class="${d.shipped ? "secondary" : "primary"}" data-shipped="${escapeHTML(d.id)}">
-            ${d.shipped ? (d.type === "自取" ? "取消已交貨" : "取消已出貨") : (d.type === "自取" ? "確認已交貨" : "確認已出貨")}
-          </button>
-        </div>
-        ${d.type === "自取" && !d.paid && !d.shipped ? `<button class="primary" data-pickup-complete="${escapeHTML(d.id)}" style="margin-top:8px;width:100%">收款＋交貨一次完成</button>` : ""}
-      </div>
-    </div>
-  `).join("");
-}
-
-let deliveryCounter = 0;
-
-function addDelivery() {
-  deliveryCounter++;
-  const id = deliveryCounter;
-  const div = document.createElement("div");
-  div.className = "delivery delivery-form";
-
-  div.innerHTML = `
-    <div class="row">
-      <h3>配送資料 ${id}</h3>
-      <button class="danger remove-delivery">移除</button>
-    </div>
-
-    <label>配送方式</label>
-    <select class="type">
-      <option value="宅配">宅配</option>
-      <option value="自取">自取</option>
-    </select>
-
-    <label>收件人姓名</label>
-    <input class="name">
-
-    <label>收件人電話</label>
-    <input class="phone" type="tel">
-
-    <label>宅配地址</label>
-    <input class="address">
-
-    <label>盒數</label>
-    <input class="qty" type="number" min="1" value="1">
-
-    <label>配送備註</label>
-    <input class="note">
-
-    <p class="muted freight"></p>
-  `;
-
-  div.querySelector(".remove-delivery").onclick = () => {
-    div.remove();
-    estimate();
-  };
-
-  const deliveryType = div.querySelector(".type");
-
-function updateDeliveryFields() {
-  const isPickup = deliveryType.value === "自取";
-
-  [".name", ".phone", ".address"].forEach(selector => {
-    const field = div.querySelector(selector);
-    if (!field) return;
-
-    const label = field.previousElementSibling;
-
-    field.style.display = isPickup ? "none" : "";
-    field.required = !isPickup;
-
-    if (label && label.tagName === "LABEL") {
-      label.style.display = isPickup ? "none" : "";
+      if (typeof liff === 'undefined' || typeof liff.getFriendship !== 'function' || !liff.isLoggedIn()) return;
+      var friendship = await liff.getFriendship();
+      // 若訂單已成功，避免在成功頁之後再改動訂購前畫面。
+      if (!orderSubmitted && friendship && friendship.friendFlag === false) box.style.display = 'block';
+    } catch (error) {
+      console.warn('訂購前無法確認 LINE 好友狀態，略過提醒', error);
     }
-
-    if (isPickup) field.value = "";
-  });
-}
-
-deliveryType.addEventListener("change", updateDeliveryFields);
-
-div.querySelectorAll("input, select").forEach(el => {
-  el.addEventListener("input", estimate);
-  el.addEventListener("change", estimate);
-});
-
-updateDeliveryFields();
-
-  $("deliveryForms").appendChild(div);
-  estimate();
-}
-
-function collectDeliveries() {
-  return [...document.querySelectorAll(".delivery-form")]
-    .map((form, index) => ({
-      id: "D-" + Date.now() + "-" + index,
-      type: form.querySelector(".type").value,
-      name: form.querySelector(".name").value.trim(),
-      phone: form.querySelector(".phone").value.trim(),
-      address: form.querySelector(".address").value.trim(),
-      qty: Number(form.querySelector(".qty").value),
-      note: form.querySelector(".note").value.trim()
-    }));
-}
-
-function calculateDelivery(d) {
-  const pieces = d.type === "宅配"
-    ? Math.ceil(d.qty / BOXES_PER_PIECE)
-    : 0;
-
-  return {
-    ...d,
-    address: d.type === "宅配" ? d.address : "",
-    shipping: pieces * SHIPPING_FEE,
-    paid: false,
-    shipped: false,
-    shipDate: ""
-  };
-}
-
-function estimate() {
-  const lines = collectDeliveries();
-  let total = 0;
-
-  const forms = document.querySelectorAll(".delivery-form");
-
-  lines.forEach((line, i) => {
-    const qty = Number.isInteger(line.qty) && line.qty > 0
-      ? line.qty : 0;
-    const pieces = line.type === "宅配"
-      ? Math.ceil(qty / BOXES_PER_PIECE)
-      : 0;
-    const shipping = pieces * SHIPPING_FEE;
-
-    total += qty * PRICE + shipping;
-
-    forms[i].querySelector(".freight").textContent =
-      `${pieces} 件貨運 · 運費 ${money(shipping)}`;
-  });
-
-  $("estimate").textContent = money(total);
-  const notice = $("pricingNotice");
-  if (notice) notice.textContent = `砂糖橘每盒 ${money(PRICE)}；宅配每 ${BOXES_PER_PIECE} 盒一件，每件 ${money(SHIPPING_FEE)}。不同宅配地址分開計算運費。`;
-}
-
-async function createOrder() {
-  const buyer = $("buyerName").value.trim();
-  const phone = $("buyerPhone").value.trim();
-  const lines = collectDeliveries();
-
-  if (!buyer || !phone) {
-    alert("請填寫訂購人姓名與電話。");
-    return;
   }
 
-  if (!lines.length) {
-    alert("請至少新增一筆配送資料。");
-    return;
-  }
-
-  for (const [i, d] of lines.entries()) {
-  if (
-    !Number.isInteger(d.qty) ||
-    d.qty < 1 ||
-    (
-      d.type === "宅配" &&
-      (!d.name || !d.phone || !d.address)
-    )
-  ) {
-    alert(`第 ${i + 1} 筆配送資料不完整。`);
-    return;
-  }
-}
-
-  if (!confirm("訂單資料是否確認完畢並建立訂單？")) return;
-
-  const order = {
-    id: makeId(),
-    buyer,
-    phone,
-    note: $("orderNote").value.trim(),
-    deliveries: lines.map(calculateDelivery)
-  };
-
-  try {
-  const response = await fetch(
-    "https://sugarorange-api.vercel.app/api/order",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...await requireAdminCredentials(),
-"Authorization": "Bearer " + (liff.getAccessToken() || "")
-      },
-      body: JSON.stringify({
-        action: "createOrder",
-        source: "後台手動輸入",
-        buyerName: buyer,
-        buyerPhone: phone,
-        note: order.note,
-        deliveries: lines.map(d => ({
-          type: d.type,
-          name: d.name,
-          phone: d.phone,
-          address: d.type === "宅配" ? d.address : "",
-          qty: Number(d.qty),
-          note: d.note || ""
-        }))
-      })
+  // 訂單已成立後才查好友狀態。查詢失敗時只顯示一般提醒，不影響訂單。
+  async function showFriendshipReminder() {
+    var box = document.getElementById('friendship-reminder');
+    if (!box) return;
+    box.style.display = 'none';
+    var isFriend = null;
+    try {
+      if (typeof liff !== 'undefined' && typeof liff.getFriendship === 'function' && liff.isLoggedIn()) {
+        var friendship = await liff.getFriendship();
+        if (friendship && typeof friendship.friendFlag === 'boolean') isFriend = friendship.friendFlag;
+      }
+    } catch (error) {
+      console.warn('無法確認 LINE 好友狀態；改顯示一般提醒', error);
     }
-  );
-
-  const result = await response.json();
-
-  if (!response.ok || result.status !== "success") {
-    if (response.status === 401 || response.status === 403) clearAdminSession();
-    throw new Error(result.message || "訂單寫入失敗");
+    // 已確認是好友：不重複顯示加好友提醒。
+    if (isFriend === true) return;
+    var heading = isFriend === false ? '📢 請加入餘有榮焉官方 LINE' : '📢 請確認已加入餘有榮焉官方 LINE';
+    var message = isFriend === false
+      ? '目前尚未偵測到您與官方帳號的好友關係。請加入好友，以便收到採收、付款及取貨／出貨通知。'
+      : '目前無法確認您的好友狀態。若尚未加入，請點下方按鈕加入，以免錯過後續通知。';
+    box.innerHTML = '<h3>' + heading + '</h3><p>' + message + '</p>' +
+      '<a class="friendship-link" href="' + OFFICIAL_LINE_FRIEND_URL + '" target="_blank" rel="noopener noreferrer">加入餘有榮焉官方 LINE 好友</a>' +
+      '<p class="friendship-small">官方 LINE：@youyu｜訂單已成立，加入好友不會重複下單。</p>';
+    box.style.display = 'block';
   }
 
-  let data;
 
-try {
-  data = await loadOrdersFromGoogle();
-} catch (error) {
-  alert(
-    '訂單已成功建立！\n' +
-    '訂單編號：' + result.orderId + '\n\n' +
-    '但重新讀取訂單資料失敗，請重新開啟管理後台確認。\n' +
-    '請勿重複送單。\n\n' +
-    '原因：' + error.message
-  );
-  return;
+  function syncUI(idx) {
+    var el = document.getElementById('qty-' + idx);
+    el.value = qtys[idx];
+    var card = document.getElementById('spec-card-' + idx);
+    if (SPECS[idx].soldout) return;
+    card.className = 'spec-card' + (qtys[idx] > 0 ? ' has-qty' : '');
+  }
+
+  function stepQty(idx, delta) {
+    if (SPECS[idx].soldout) return;
+    qtys[idx] = Math.max(0, qtys[idx] + delta);
+    syncUI(idx);
+    document.getElementById('empty-warning').style.display = 'none';
+    updatePriceDisplay();
+  }
+
+  function inputQty(idx, val) {
+    if (SPECS[idx].soldout) return;
+    var n = parseInt(val, 10);
+    qtys[idx] = (isNaN(n) || n < 0) ? 0 : n;
+    syncUI(idx);
+    document.getElementById('empty-warning').style.display = 'none';
+    updatePriceDisplay();
+  }
+
+  async function init() {
+    try {
+      if (typeof liff === 'undefined') {
+        console.warn('LIFF SDK 未載入');
+      } else {
+        // 初始化只執行一次；送單時等它完成，避免使用者快速操作造成競態。
+        liffInitPromise = liff.init({ liffId: LIFF_ID });
+        await liffInitPromise;
+        if (liff.isLoggedIn()) {
+          // 先取得授權，個人資料讀取失敗不應阻止送單。
+          lineAccessToken = liff.getAccessToken() || '';
+          try {
+            var profile = await liff.getProfile();
+            lineName = profile.displayName || '';
+            lineUserId = profile.userId || '';
+            if (deliveryType === '宅配') { restoreLastDeliveryAddress(); updatePriceDisplay(); }
+          } catch (profileError) {
+            console.warn('LINE 個人資料暫時無法讀取', profileError);
+          }
+        } else {
+          console.info('尚未登入 LINE；可先填寫預購資料');
+        }
+      }
+    } catch (e) {
+      console.warn('LIFF init failed:', e);
+    }
+    restorePendingOrder();
+    updatePriceDisplay();
+    // 不阻塞表單初始化與送單；已加入好友不顯示提醒。
+    showPreorderFriendshipReminder().catch(function(error) { console.warn("訂購前好友提醒失敗", error); });
+  }
+
+  // 若送出時需要 LINE 登入，先保存客人已填寫的資料，避免登入返回後全部清空。
+  function savePendingOrder() {
+    try {
+      sessionStorage.setItem('youyu_pending_order', JSON.stringify({
+        deliveryType: deliveryType,
+        qtys: qtys,
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        note: document.getElementById('note').value,
+        buyerName: document.getElementById('buyer-name').value,
+        buyerPhone: document.getElementById('buyer-phone').value,
+        buyerSame: document.getElementById('buyer-same').checked
+      }));
+    } catch (e) { console.warn('暫存訂單失敗', e); }
+  }
+
+  function restorePendingOrder() {
+    try {
+      var raw = sessionStorage.getItem('youyu_pending_order');
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      if (data.deliveryType === '宅配' || data.deliveryType === '自取') setDelivery(data.deliveryType);
+      if (Array.isArray(data.qtys)) {
+        data.qtys.forEach(function(q, i) {
+          if (i < qtys.length) {
+            qtys[i] = Math.max(0, parseInt(q, 10) || 0);
+            syncUI(i);
+          }
+        });
+      }
+      ['name','phone','address','note'].forEach(function(id) {
+        if (typeof data[id] === 'string') document.getElementById(id).value = data[id];
+      });
+      if (typeof data.buyerName === 'string') document.getElementById('buyer-name').value = data.buyerName;
+      if (typeof data.buyerPhone === 'string') document.getElementById('buyer-phone').value = data.buyerPhone;
+      document.getElementById('buyer-same').checked = data.buyerSame === true;
+      toggleBuyerSame();
+      sessionStorage.removeItem('youyu_pending_order');
+    } catch (e) { console.warn('恢復訂單失敗', e); }
+  }
+
+  // 不自動重新導向。由客人自行選擇開啟 LINE LIFF 專用入口。
+  function showLineEntryNotice() {
+    var el = document.getElementById('line-entry-notice');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'line-entry-notice';
+      el.setAttribute('role', 'alert');
+      el.style.cssText = 'position:fixed;z-index:9999;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px';
+      el.innerHTML = '<div style="background:#fff;border-radius:18px;padding:24px;max-width:400px;width:100%;line-height:1.8;color:#5D4031">' +
+        '<h3 style="color:#C2410C;margin-bottom:12px">請從 LINE 開啟預購單</h3>' +
+        '<p>為了將訂單確認通知傳送給你，需要先透過 LINE 完成授權。這筆訂單<strong>尚未送出</strong>。</p>' +
+        '<p style="font-size:13px;margin:10px 0">請點下方按鈕，在 LINE 開啟預購頁面。若瀏覽器詢問是否開啟 LINE，請選擇「打開」。</p>' +
+        '<a href="' + LIFF_ENTRY_URL + '" style="display:block;text-align:center;background:#F97316;color:white;padding:12px;border-radius:12px;text-decoration:none;font-weight:bold;margin-top:16px">在 LINE 開啟預購單</a>' +
+        '<button type="button" id="line-entry-close" style="display:block;width:100%;padding:10px;margin-top:10px;background:#FFF7ED;border:0;border-radius:10px;color:#7C3E18">返回目前表單</button>' +
+        '<p style="font-size:12px;color:#999;margin-top:10px">跨瀏覽器開啟時，可能需要重新填寫資料。</p></div>';
+      document.body.appendChild(el);
+      document.getElementById('line-entry-close').addEventListener('click', function() { el.style.display = 'none'; });
+    }
+    el.style.display = 'flex';
+  }
+
+  function syncBuyerIfSame() {
+    if (!document.getElementById('buyer-same').checked) return;
+    document.getElementById('buyer-name').value = document.getElementById('name').value;
+    document.getElementById('buyer-phone').value = document.getElementById('phone').value;
+  }
+
+  function toggleBuyerSame() {
+    var same = document.getElementById('buyer-same').checked;
+    var buyerName = document.getElementById('buyer-name');
+    var buyerPhone = document.getElementById('buyer-phone');
+    buyerName.readOnly = same;
+    buyerPhone.readOnly = same;
+    buyerName.style.background = same ? '#F5F5F5' : '';
+    buyerPhone.style.background = same ? '#F5F5F5' : '';
+    if (same) syncBuyerIfSame();
+  }
+
+  // A 方案：僅在此裝置的瀏覽器儲存「成功送出的最近宅配地址」。
+  // 以 LINE 使用者 ID 區分不同帳號，避免共用裝置誤帶入他人地址。
+  function savedAddressKey() {
+    return lineUserId ? 'youyu_last_delivery_address_v1_' + lineUserId : '';
+  }
+
+  function rememberDeliveryAddress(address) {
+    var key = savedAddressKey();
+    if (!key || !address) return;
+    try { localStorage.setItem(key, address); }
+    catch (error) { console.warn('無法儲存最近宅配地址', error); }
+  }
+
+  function restoreLastDeliveryAddress() {
+    var input = document.getElementById('address');
+    var hint = document.getElementById('saved-address-message');
+    if (!input || !hint || input.value.trim()) return;
+    var key = savedAddressKey();
+    if (!key) return;
+    try {
+      var saved = localStorage.getItem(key);
+      if (!saved) return;
+      input.value = saved;
+      hint.textContent = '✓ 已帶入此裝置上次成功訂購的宅配地址，請確認是否正確，可直接修改。';
+      hint.style.display = 'block';
+    } catch (error) { console.warn('無法讀取最近宅配地址', error); }
+  }
+
+  function setDelivery(type) {
+    deliveryType = type;
+    document.getElementById('btn-pickup').className   = 'delivery-btn' + (type === '自取' ? ' active' : '');
+    document.getElementById('btn-delivery').className = 'delivery-btn' + (type === '宅配' ? ' active' : '');
+    document.getElementById('btn-pickup').setAttribute('aria-pressed', String(type === '自取'));
+    document.getElementById('btn-delivery').setAttribute('aria-pressed', String(type === '宅配'));
+    document.getElementById('delivery-choice-warning').style.display = 'none';
+    document.getElementById('address-section').style.display       = type === '宅配' ? 'block' : 'none';
+    if (type === '宅配') restoreLastDeliveryAddress();
+    document.getElementById('pickup-info-section').style.display   = type === '自取' ? 'block' : 'none';
+    document.getElementById('delivery-info-section').style.display = type === '宅配' ? 'block' : 'none';
+    document.getElementById('contact-section-title').innerHTML = '<span class="step">03</span> ' + (type === '宅配' ? '宅配收件人資訊' : '填寫聯絡人資訊');
+    document.getElementById('buyer-section').style.display = type === '宅配' ? 'block' : 'none';
+    document.querySelector('#name').previousElementSibling.textContent = type === '宅配' ? '收件人姓名 ＊必填' : '聯絡姓名 ＊必填';
+    document.querySelector('#phone').previousElementSibling.textContent = type === '宅配' ? '收件人手機 ＊必填' : '手機號碼 ＊必填';
+    updatePriceDisplay();
+  }
+
+function validateMainlandAddress(address, index) {
+  const compact = address.normalize('NFKC').replace(/[\s\u3000-]/g, '').replace(/臺/g, '台');
+  const offshore = /澎湖|金門|連江|馬祖|小琉球|琉球鄉|綠島|蘭嶼|烏坵|烈嶼|東引|莒光|南竿|北竿|東沙|南沙/;
+  if (offshore.test(compact)) {
+    throw Object.assign(new Error(`第 ${index + 1} 筆為離島配送，無法套用台灣本島新竹貨運費率；請先聯繫我們確認運費及配送方式。`), {status:400});
+  }
+  // 接受常見國別及郵遞區號前綴；要求完整縣市，以免漏判只填鄉鎮的地址。
+  const local = compact.replace(/^(?:(?:中華民國|台灣省|台灣)|(?:\d{3,6})){0,3}/, '');
+  const mainland = /^(?:台北市|新北市|桃園市|台中市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|台東縣)/;
+  if (!mainland.test(local)) {
+    throw Object.assign(new Error(`第 ${index + 1} 筆宅配地址請填寫完整縣市、鄉鎮市區與地址；目前線上運費僅適用新竹貨運配送台灣本島，離島請先聯繫我們。`), {status:400});
+  }
 }
+  function shippingAddressMessage() {
+    if (deliveryType !== '宅配') return '';
+    var address = document.getElementById('address').value.trim();
+    if (!address) return '請填寫完整宅配地址；運費確認後才會顯示總金額。';
+    try { validateMainlandAddress(address, 0); return ''; }
+    catch (error) { return error.message.replace(/^第 1 筆/, '此筆'); }
+  }
 
-orders = (data.orders || []).map(row => {
-  const deliveries = (data.details || [])
-    .filter(detail => detail[1] === row[0])
-    .map(detail => {
-      const payment = (data.payments || [])
-        .find(p => p[2] === detail[0]);
+  function calcShipping() {
+    if (deliveryType !== '宅配') return 0;
+    if (shippingAddressMessage()) return null;
+    var totalBoxes = qtys.reduce(function(a, b) { return a + b; }, 0);
+    if (totalBoxes === 0) return 0;
+    return Math.ceil(totalBoxes / 4) * 150;
+  }
 
-      return {
-        id: detail[0],
-        type: detail[4] || '',
-        name: detail[2] || '',
-        phone: detail[3] || '',
-        address: detail[5] || '',
-        qty: Number(detail[7]) || 0,
-        amount: payment && payment[4] !== undefined && payment[4] !== null && payment[4] !== ''
-          ? Number(payment[4])
-          : undefined,
-        shipping: Number(detail[10]) || 0,
-        paid: payment ? payment[7] === '已收款' : false,
-        shipped: detail[13] === '已出貨',
-        shipDate: detail[11] || '',
-        note: detail[17] || ''
-      };
+  function updatePriceDisplay() {
+    var html = '';
+    var subtotal = 0;
+    for (var i = 0; i < SPECS.length; i++) {
+      if (SPECS[i].soldout || qtys[i] <= 0) continue;
+      var amount = qtys[i] * SPECS[i].price;
+      subtotal += amount;
+      html += '<div class="price-row"><span>' + SPECS[i].name + ' x ' + qtys[i] + '</span><span>NT$ ' + amount + '</span></div>';
+    }
+    var shipping = calcShipping();
+    var addressMessage = shippingAddressMessage();
+    document.getElementById('shipping-address-message').textContent = addressMessage;
+    if (shipping === null) {
+      html += '<div class="price-row"><span>宅配運費</span><span>待確認</span></div>';
+      html += '<div class="price-total"><span>總計金額</span><span>待確認運費</span></div>';
+      document.getElementById('price-display').innerHTML = html;
+      return;
+    }
+    if (shipping > 0) {
+      html += '<div class="price-row"><span>本島新竹貨運運費</span><span>NT$ ' + shipping + '</span></div>';
+    }
+    var total = subtotal + shipping;
+    html += '<div class="price-total"><span>總計金額</span><span>NT$ ' + total + '</span></div>';
+    document.getElementById('price-display').innerHTML = html;
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
-
-  return {
-    id: row[0] || '',
-    createdAt: row[1] || '',
-    customerSources: parseCustomerSources(row[23]),
-    buyer: row[5] || '',
-    phone: row[6] || '',
-    note: row[16] || '',
-    deliveries
-  };
-});
-
-order.id = result.orderId;
-
-} catch (error) {
-  alert("新增訂單失敗：" + error.message);
-  return;
-}
-
-  $("buyerName").value = "";
-  $("buyerPhone").value = "";
-  $("orderNote").value = "";
-  $("deliveryForms").innerHTML = "";
-  addDelivery();
-
-  renderAll();
-  switchPage("orders");
-
-  alert("訂單已成功寫入 Google 試算表！\n訂單編號：" + order.id);
-}
-
-function renderAll() {
-  renderCustomerSourceFilter();
-  renderSummary();
-  renderOrders();
-  renderPayments();
-  renderShipping();
-}
-
-function switchPage(page) {
-  ["orders", "payments", "shipping", "create"].forEach(id => {
-    $(id).classList.toggle("hide", id !== page);
-  });
-
-document.querySelectorAll("nav button").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.page === page
-    );
-  });
-}
-
-  document.querySelectorAll('[data-dashboard]').forEach(button=>button.addEventListener('click',()=>openDashboardCategory(button.dataset.dashboard)));
-['search','orderStatusFilter','orderTypeFilter','customerSourceFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',clearDashboardSelection));
-document.querySelectorAll("nav button").forEach(button => {
-  button.addEventListener("click", () => {
-    clearDashboardSelection();
-    switchPage(button.dataset.page);
-    renderOrders();
-  });
-});
-
-$("search").addEventListener("input", renderOrders);
-$("orderStatusFilter").addEventListener("change", renderOrders);
-$("orderTypeFilter").addEventListener("change", renderOrders);
-$("customerSourceFilter").addEventListener("change", renderOrders);
-$("orderList").addEventListener("change", event => {
-  if (event.target.matches("[data-shipdate]")) updateShipDate(event.target.dataset.shipdate,event.target.value);
-});
-$("orderList").addEventListener("click", event => {
-  const quick=event.target.closest("[data-pickup-complete]");
-  if(quick)return completePickup(quick.dataset.pickupComplete,quick);
-  const payment=event.target.closest("[data-payment]");
-  if(payment)return updatePayment(payment.dataset.payment);
-  const shipped=event.target.closest("[data-shipped]");
-  if(shipped)return updateShipping(shipped.dataset.shipped);
-});
-$("paymentFilter").addEventListener("change", renderPayments);
-$("paymentTypeFilter").addEventListener("change", renderPayments);
-$("shippingFilter").addEventListener("change", renderShipping);
-$("shippingTypeFilter").addEventListener("change", renderShipping);
-
-$("paymentList").addEventListener("click", event => {
-  const quick = event.target.closest("[data-pickup-complete]");
-  if (quick) return completePickup(quick.dataset.pickupComplete, quick);
-  const payment = event.target.closest("[data-payment]");
-  if (payment) return updatePayment(payment.dataset.payment);
-  const shipped = event.target.closest("[data-shipped]");
-  if (shipped) return updateShipping(shipped.dataset.shipped);
-});
-
-$("shippingList").addEventListener("change", event => {
-  if (event.target.matches("[data-shipdate]")) {
-    updateShipDate(
-      event.target.dataset.shipdate,
-      event.target.value
-    );
   }
-});
 
-$("shippingList").addEventListener("click", event => {
-  const quick = event.target.closest("[data-pickup-complete]");
-  if (quick) return completePickup(quick.dataset.pickupComplete, quick);
-  const payment = event.target.closest("[data-payment]");
-  if (payment) return updatePayment(payment.dataset.payment);
-  const shipped = event.target.closest("[data-shipped]");
-  if (shipped) return updateShipping(shipped.dataset.shipped);
-});
-
-addDelivery();
-renderAll();
-
-(async function initAdmin() {
-  try {
-    const lineReady = await initAdminLine();
-    if (!lineReady) return;
-
-    const data = await loadOrdersFromGoogle();
-    const config = data.settings || {};
-
-PRICE = Number(config.price) > 0
-  ? Number(config.price) : 400;
-
-BOXES_PER_PIECE = Number(config.boxesPerPiece) > 0
-  ? Number(config.boxesPerPiece) : 4;
-
-SHIPPING_FEE =
-  config.shippingPerPiece !== null &&
-  config.shippingPerPiece !== undefined &&
-  config.shippingPerPiece !== '' &&
-  Number.isFinite(Number(config.shippingPerPiece)) &&
-  Number(config.shippingPerPiece) >= 0
-    ? Number(config.shippingPerPiece)
-    : 150;
-
-estimate();
-
-    orders = (data.orders || []).map(row => ({
-      id: row[0] || '',
-      createdAt: row[1] || '',
-    customerSources: parseCustomerSources(row[23]),
-      buyer: row[5] || '',
-      phone: row[6] || '',
-      note: row[16] || '',
-      deliveries: (data.details || [])
-        .filter(detail => detail[1] === row[0])
-        .map(detail => {
-          const payment = (data.payments || [])
-            .find(p => p[2] === detail[0]);
-
-          return {
-            id: detail[0],
-            type: detail[4] || '',
-            name: detail[2] || '',
-            phone: detail[3] || '',
-            address: detail[5] || '',
-            qty: Number(detail[7]) || 0,
-            amount: payment && payment[4] !== undefined && payment[4] !== null && payment[4] !== ''
-              ? Number(payment[4])
-              : undefined,
-            shipping: Number(detail[10]) || 0,
-            paid: payment ? payment[7] === '已收款' : false,
-            shipped: detail[13] === '已出貨',
-            shipDate: detail[11] || '',
-            note: detail[17] || ''
-          };
-        })
-    }));
-
-    renderAll();
-  } catch (error) {
-    alert('無法讀取正式訂單：' + error.message);
+  function showSuccessScreen(orderId, name, phone, totalAmount, shipping, address, note, buyerName, buyerPhone) {
+    var safe = escapeHtml;
+    var isPickup = deliveryType === '自取';
+    var subtotal = 0;
+    var itemRows = '';
+    for (var i = 0; i < SPECS.length; i++) {
+      if (SPECS[i].soldout || qtys[i] <= 0) continue;
+      subtotal += qtys[i] * SPECS[i].price;
+      itemRows += '<div class="order-row"><span class="label">品項</span><span class="value">' + safe(SPECS[i].name) + '</span></div>' +
+        '<div class="order-row"><span class="label">訂購數量</span><span class="value">' + qtys[i] + ' 盒</span></div>';
+    }
+    var locationHtml = isPickup
+      ? '<section class="success-detail"><h3>📍 公館自取資訊</h3>' +
+        '<div class="order-row"><span class="label">自取地點</span><span class="value">' + safe(PICKUP_ADDRESS) + '</span></div>' +
+        '<p>取貨時間採預約制，收到採收通知後請透過官方 LINE 確認。現場不一定有人員，恕不接受未預約直接取貨。</p></section>'
+      : '<section class="success-detail"><h3>🚛 宅配收件資訊</h3>' +
+        '<div class="order-row"><span class="label">收件人</span><span class="value">' + safe(name) + '</span></div>' +
+        '<div class="order-row"><span class="label">收件電話</span><span class="value">' + safe(phone) + '</span></div>' +
+        '<div class="order-row"><span class="label">收件地址</span><span class="value">' + safe(address) + '</span></div>' +
+        '<p>新竹貨運配送台灣本島；依採收與付款確認情況安排出貨。</p></section>';
+    var noteHtml = note
+      ? '<div class="order-row"><span class="label">備註</span><span class="value">' + safe(note) + '</span></div>'
+      : '';
+    document.getElementById('main-screen').style.display = 'none';
+    document.getElementById('success-screen').style.display = 'block';
+    document.getElementById('success-summary').innerHTML =
+      '<div class="success-order-id"><div class="success-id-label">您的訂單編號</div>' +
+      '<div class="success-id-value">' + safe(orderId) + '</div>' +
+      '<span class="success-method">' + (isPickup ? '公館自取' : '新竹貨運宅配') + '</span></div>' +
+      '<h3>🧾 訂購明細</h3>' +
+      '<div class="order-row"><span class="label">訂購人</span><span class="value">' + safe(buyerName) + '</span></div>' +
+      '<div class="order-row"><span class="label">訂購電話</span><span class="value">' + safe(buyerPhone) + '</span></div>' +
+      itemRows +
+      '<div class="order-row"><span class="label">商品金額</span><span class="value">NT$ ' + subtotal.toLocaleString('en-US') + '</span></div>' +
+      '<div class="order-row"><span class="label">' + (isPickup ? '自取運費' : '宅配運費') + '</span><span class="value">NT$ ' + Number(shipping).toLocaleString('en-US') + '</span></div>' +
+      '<div class="order-total-row"><span>預購總金額</span><span class="value">NT$ ' + Number(totalAmount).toLocaleString('en-US') + '</span></div>' +
+      locationHtml + noteHtml +
+      '<div class="success-payment"><strong>目前無須付款</strong>' +
+      '<p>待採收與供貨數量確認後，我們將另行通知付款及' + (isPickup ? '取貨' : '出貨') + '資訊。</p></div>';
+    window.scrollTo(0, 0);
   }
-})();
+
+  async function submitOrder() {
+    if (sending) return;
+    if (deliveryType !== '自取' && deliveryType !== '宅配') {
+      document.getElementById('delivery-choice-warning').style.display = 'block';
+      document.getElementById('btn-pickup').scrollIntoView({behavior:'smooth',block:'center'});
+      alert('請先選擇「我要自己去拿」或「我要寄到家裡」，再送出預購單。');
+      return;
+    }
+    var name    = document.getElementById('name').value.trim();
+    var phone   = document.getElementById('phone').value.trim();
+    var address = document.getElementById('address').value.trim();
+    var note    = document.getElementById('note').value.trim();
+    var buyerName = deliveryType === '宅配' ? document.getElementById('buyer-name').value.trim() : name;
+    var buyerPhone = deliveryType === '宅配' ? document.getElementById('buyer-phone').value.trim() : phone;
+
+    for (var j = 0; j < SPECS.length; j++) {
+      if (SPECS[j].soldout) { qtys[j] = 0; continue; }
+      var v = parseInt(document.getElementById('qty-' + j).value, 10);
+      qtys[j] = (isNaN(v) || v < 0) ? 0 : v;
+    }
+
+    var totalBoxes = qtys.reduce(function(a, b) { return a + b; }, 0);
+    if (totalBoxes === 0) {
+      document.getElementById('empty-warning').style.display = 'block';
+      return;
+    }
+    if (!name || !phone) { alert('請填寫姓名和電話'); return; }
+
+    var cleanPhone = phone.replace(/[\s\-]/g, '');
+    if (!/^09\d{8}$/.test(cleanPhone)) {
+      alert('手機號碼格式不正確，請填寫 09 開頭的 10 碼號碼');
+      return;
+    }
+    phone = cleanPhone;
+
+    if (deliveryType === '宅配') {
+      if (!buyerName || !buyerPhone) { alert('請填寫訂購人姓名與手機'); return; }
+      var cleanBuyerPhone = buyerPhone.replace(/[\s\-]/g, '');
+      if (!/^09\d{8}$/.test(cleanBuyerPhone)) {
+        alert('訂購人手機格式不正確，請填寫 09 開頭的 10 碼號碼'); return;
+      }
+      buyerPhone = cleanBuyerPhone;
+    } else {
+      buyerPhone = phone;
+    }
+
+    if (deliveryType === '宅配' && !address) { alert('請填寫宅配地址'); return; }
+    if (deliveryType === '宅配' && shippingAddressMessage()) {
+      updatePriceDisplay();
+      alert(shippingAddressMessage());
+      document.getElementById('address').focus();
+      return;
+    }
+
+    var shipping = calcShipping();
+    var subtotal = 0;
+    for (var i = 0; i < SPECS.length; i++) {
+      if (SPECS[i].soldout) continue;
+      subtotal += qtys[i] * SPECS[i].price;
+    }
+    var totalAmount = subtotal + shipping;
+    var methodText = deliveryType === '自取' ? '苗栗公館自取（需預約）' : '新竹貨運宅配（寄到填寫的收件地址）';
+    if (!confirm('請再次確認取貨方式：\n\n' + methodText + '\n\n訂購數量：' + totalBoxes + ' 盒\n預購總金額：NT$ ' + totalAmount.toLocaleString('en-US') + '\n\n確認無誤後按「確定」送出訂單。')) return;
+
+    var specSummary = SPECS.map(function(s, i) {
+      if (s.soldout) return null;
+      return qtys[i] > 0 ? s.name + ' x' + qtys[i] : null;
+    }).filter(Boolean).join('、');
+
+    var btn = document.getElementById('submit-btn');
+    if (orderSubmitted) return;
+    sending = true;
+    btn.disabled = true;
+    btn.textContent = '訂單處理中...';
+    try {
+      if (typeof liff === 'undefined') {
+        showLineEntryNotice();
+        return;
+      }
+      // 若使用者在 LIFF 初始化尚未完成時送單，先等初始化結果。
+      if (liffInitPromise) {
+        try { await liffInitPromise; }
+        catch (initError) {
+          console.warn('送單時 LIFF 初始化失敗', initError);
+          showLineEntryNotice();
+          return;
+        }
+      }
+      if (!liff.isLoggedIn()) {
+        showLineEntryNotice();
+        return;
+      }
+      // 每次送出時重新取得目前 LIFF Token，避免使用過期的暫存值。
+      lineAccessToken = liff.getAccessToken() || '';
+      if (!lineAccessToken) {
+        showLineEntryNotice();
+        return;
+      }
+      var payload = {
+        action: 'createOrder',
+        buyerName: buyerName,
+        buyerPhone: buyerPhone,
+        note: note,
+        deliveries: [{
+          type: deliveryType,
+          name: name,
+          phone: phone,
+          address: deliveryType === '宅配' ? address : '',
+          qty: totalBoxes,
+          note: note
+        }]
+      };
+      var res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + lineAccessToken
+        },
+        body: JSON.stringify(payload)
+      });
+      var result = await res.json();
+      if (!res.ok || result.status !== 'success') {
+        throw new Error(result.message || '訂單送出失敗');
+      }
+      orderSubmitted = true;
+      if (deliveryType === '宅配') rememberDeliveryAddress(address);
+      showSuccessScreen(result.orderId, name, phone, result.total, result.shipping, address, note, buyerName, buyerPhone);
+      // 非同步查詢好友狀態，不等待、不阻擋已成功建立的訂單。
+      showFriendshipReminder().catch(function(err) { console.warn('好友提醒顯示失敗', err); });
+    } catch (e) {
+      console.error('Submit error:', e);
+      var msg = e.message && e.message.includes('Failed to fetch')
+        ? '連線中斷，訂單結果可能不明。請先向官方 LINE 核對訂單是否成立，避免重複送單。'
+        : (e.message || '送出失敗') + '\n若不確定訂單是否成立，請先向官方 LINE 核對再重試。';
+      alert(msg);
+    } finally {
+      sending = false;
+      if (!orderSubmitted) {
+        btn.disabled = false;
+        btn.textContent = '確認送出預購單 →';
+      }
+    }
+  }
+
+  init();
 </script>
 </body>
 </html>
