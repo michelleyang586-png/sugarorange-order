@@ -859,6 +859,8 @@ function printShippingList() {
     <td>${escapeHTML(d.address || (d.type === "自取" ? "自取" : "—"))}</td>
     <td>${Number(d.qty) || 0}</td>
     <td>${escapeHTML(d.shipDate || "—")}</td>
+    <td>${escapeHTML(d.order.note || "—")}</td>
+    <td>${escapeHTML(d.note || "—")}</td>
     <td>${d.paid ? "已收款" : "未收款"}／${d.shipped ? "已出貨" : "未出貨"}</td>
   </tr>`).join("");
   const html = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
@@ -880,8 +882,8 @@ function printShippingList() {
     <p>出貨狀態：${escapeHTML($("shippingFilter").selectedOptions[0].textContent)}　
     配送方式：${escapeHTML($("shippingTypeFilter").selectedOptions[0].textContent)}　
     共 ${ds.length} 筆</p>
-    <table><thead><tr><th>序</th><th>訂單編號</th><th>訂購人</th><th>訂購電話</th><th>方式</th><th>收件人</th><th>收件電話</th><th>地址</th><th>盒數</th><th>預計日期</th><th>狀態</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="11">目前篩選條件下沒有出貨資料</td></tr>'}</tbody></table>
+    <table><thead><tr><th>序</th><th>訂單編號</th><th>訂購人</th><th>訂購電話</th><th>方式</th><th>收件人</th><th>收件電話</th><th>地址</th><th>盒數</th><th>預計日期</th><th>客戶備註</th><th>配送備註</th><th>狀態</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="13">目前篩選條件下沒有出貨資料</td></tr>'}</tbody></table>
     </body></html>`;
   // 不依賴 window.open 或自動下載：點擊後一定先顯示可見的預覽介面。
   let panel = document.getElementById('printPreviewPanel');
