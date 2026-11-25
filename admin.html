@@ -116,6 +116,7 @@ p { line-height: 1.6; }
   margin-top: 12px;
 }
 .total { font-size: 22px; color: #c8692c; font-weight: bold; }
+.shipping-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 18px}.shipping-summary .card{text-align:center;padding:12px 5px;margin:0}.shipping-summary strong{display:block;font-size:clamp(22px,4vw,32px);color:#a95522}.shipping-summary span{font-size:13px}.shipping-summary small{display:block;color:#666;font-size:11px;margin-top:5px}
 /* 篩選條件與下方訂單卡片保持舒適間距 */
 #orderList, #paymentList, #shippingList { margin-top: 24px; }
 .dashboard-title { margin:16px 0 10px; font-size:18px; }
@@ -223,10 +224,13 @@ async function getAdminLineUserId() {
       <h2>出貨管理</h2>
       <button class="secondary" type="button" onclick="printShippingList()">列印／儲存列印版</button>
     </div>
+    <div id="shippingSummary" class="shipping-summary" aria-live="polite"></div>
     <label for="shippingFilter">出貨狀態</label>
     <select id="shippingFilter"><option value="all">全部</option><option value="pending" selected>未出貨</option><option value="shipped">已出貨</option></select>
     <label for="shippingTypeFilter">配送方式</label>
     <select id="shippingTypeFilter"><option value="all">全部配送</option><option value="宅配">宅配</option><option value="自取">自取</option></select>
+    <label for="shippingPrintType">列印清單類型（宅配與自取分開列印）</label>
+    <select id="shippingPrintType"><option value="宅配">宅配清單（含地址）</option><option value="自取">自取清單（不含地址）</option></select>
     <div id="shippingList"></div>
   </section>
 
@@ -839,53 +843,70 @@ async function completePickup(id, button) {
   }
 }
 
+function shippingSummaryData(type = 'all') {
+  const ds = allDeliveries().filter(d => type === 'all' || d.type === type);
+  const boxCount = items => items.reduce((sum, d) => sum + (Number(d.qty) || 0), 0);
+  return {
+    ordered: boxCount(ds),
+    shipped: boxCount(ds.filter(d => d.shipped)),
+    pending: boxCount(ds.filter(d => !d.shipped))
+  };
+}
+
+function renderShippingSummary() {
+  const type = $('shippingTypeFilter').value;
+  const stats = shippingSummaryData(type);
+  const caption = type === 'all' ? '全部配送方式' : type;
+  $('shippingSummary').innerHTML = `
+    <div class="card"><span>已接訂單盒數</span><strong>${stats.ordered.toLocaleString('zh-TW')}</strong><small>盒 · ${escapeHTML(caption)}</small></div>
+    <div class="card"><span>已出貨／已交貨盒數</span><strong>${stats.shipped.toLocaleString('zh-TW')}</strong><small>盒</small></div>
+    <div class="card"><span>待出貨／待交貨盒數</span><strong>${stats.pending.toLocaleString('zh-TW')}</strong><small>盒</small></div>`;
+}
+
 function printShippingList() {
-  // 在後台直接顯示列印預覽，避免 LINE WebView 封鎖彈出視窗。
-  // 依照出貨頁目前的篩選條件輸出，不含後台操作按鈕與登入資料。
-  const filter = $("shippingFilter").value;
-  const typeFilter = $("shippingTypeFilter").value;
-  const ds = allDeliveries().filter(d =>
-    (filter === "all" || (filter === "shipped" ? d.shipped : !d.shipped)) &&
-    (typeFilter === "all" || d.type === typeFilter)
-  );
-  const rows = ds.map((d, i) => `<tr>
-    <td>${i + 1}</td>
-    <td>${escapeHTML(d.order.id)}</td>
-    <td>${escapeHTML(displayBuyer(d))}</td>
-    <td>${escapeHTML(d.order.phone || displayPhone(d))}</td>
+  // 列印類型獨立選擇；出貨狀態沿用目前篩選，避免混印宅配與自取。
+  const filter = $('shippingFilter').value;
+  const printType = $('shippingPrintType').value;
+  const typeDs = allDeliveries().filter(d => d.type === printType);
+  const ds = typeDs.filter(d => filter === 'all' || (filter === 'shipped' ? d.shipped : !d.shipped));
+  const stats = shippingSummaryData(printType);
+  const isDelivery = printType === '宅配';
+  const rows = ds.map(d => `<tr>
+    <td class="id">${escapeHTML(d.order.id)}</td>
+    <td class="important">${escapeHTML(displayBuyer(d))}</td>
     <td>${escapeHTML(d.type)}</td>
-    <td>${escapeHTML(displayRecipient(d) || "—")}</td>
-    <td>${escapeHTML(displayPhone(d) || "—")}</td>
-    <td>${escapeHTML(d.address || (d.type === "自取" ? "自取" : "—"))}</td>
-    <td>${Number(d.qty) || 0}</td>
-    <td>${escapeHTML(d.shipDate || "—")}</td>
-    <td>${escapeHTML(d.order.note || "—")}</td>
-    <td>${escapeHTML(d.note || "—")}</td>
-    <td>${d.paid ? "已收款" : "未收款"}／${d.shipped ? "已出貨" : "未出貨"}</td>
-  </tr>`).join("");
+    <td class="important">${escapeHTML(displayRecipient(d) || '—')}</td>
+    <td>${escapeHTML(displayPhone(d) || '—')}</td>
+    ${isDelivery ? `<td class="address">${escapeHTML(d.address || '—')}</td>` : ''}
+    <td class="qty">${Number(d.qty) || 0}</td>
+    <td>${escapeHTML(d.shipDate || '—')}</td>
+    <td class="note">${escapeHTML(d.order.note || '—')}</td>
+    <td class="note">${escapeHTML(d.note || '—')}</td>
+    <td>${d.paid ? '已收款' : '未收款'}<br>${d.shipped ? (isDelivery ? '已出貨' : '已交貨') : (isDelivery ? '待出貨' : '待交貨')}</td>
+  </tr>`).join('');
   const html = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>餘有榮焉－出貨列印表</title><style>
-    body{font-family:Arial,"Microsoft JhengHei",sans-serif;color:#333;padding:16px}
-    h1{text-align:center;font-size:22px}p{text-align:center;font-size:13px}
-    table{width:100%;border-collapse:collapse;font-size:11px;table-layout:auto}
-    th,td{border:1px solid #bbb;padding:6px;word-break:break-word;vertical-align:top}
-    th{background:#f4eee8}thead{display:table-header-group}
-    tr{break-inside:avoid} .toolbar{margin-bottom:16px;text-align:center}
-    button{padding:10px 16px;margin:4px;border:0;border-radius:6px;background:#d97836;color:white}
-    @page{size:A4 landscape;margin:10mm}
-    @media print{.toolbar{display:none}body{padding:0}}
+    <title>餘有榮焉－${printType}出貨清單</title><style>
+    *{box-sizing:border-box}body{font-family:Arial,"PingFang TC","Microsoft JhengHei",sans-serif;color:#222;margin:0;padding:10px;background:#fff}
+    h1{text-align:center;font-size:18pt;margin:4px 0 2px}.subtitle{text-align:center;font-size:11pt;margin:0 0 6px}
+    .summary{display:flex;justify-content:center;gap:22px;border:1px solid #999;padding:5px;margin-bottom:7px;font-size:12pt}.summary b{font-size:15pt}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11pt;line-height:1.15}
+    th,td{border:1px solid #777;padding:2px 3px;vertical-align:middle;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap}
+    th{font-size:10pt;background:#eee}td.important{font-size:14pt;font-weight:bold}td.qty{font-size:16pt;font-weight:bold;text-align:center}
+    td.id{font-size:10pt}td.address,td.note{font-size:10.5pt}
+    tr{break-inside:avoid;page-break-inside:avoid}thead{display:table-header-group}
+    .toolbar{text-align:center;padding:8px;font-size:12pt}button{padding:10px 16px;border:0;border-radius:6px;background:#d97836;color:#fff}
+    @page{size:A4 landscape;margin:7mm}
+    @media print{body{padding:0}.toolbar{display:none}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style></head><body>
-    <div class="toolbar"><button onclick="window.print()">列印／另存 PDF</button>
-    <span>若在 LINE 中無法列印，請以 Safari／Chrome 開啟此檔案。</span></div>
-    <h1>餘有榮焉｜出貨清單</h1>
-    <p>出貨狀態：${escapeHTML($("shippingFilter").selectedOptions[0].textContent)}　
-    配送方式：${escapeHTML($("shippingTypeFilter").selectedOptions[0].textContent)}　
-    共 ${ds.length} 筆</p>
-    <table><thead><tr><th>序</th><th>訂單編號</th><th>訂購人</th><th>訂購電話</th><th>方式</th><th>收件人</th><th>收件電話</th><th>地址</th><th>盒數</th><th>預計日期</th><th>客戶備註</th><th>配送備註</th><th>狀態</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="13">目前篩選條件下沒有出貨資料</td></tr>'}</tbody></table>
+    <div class="toolbar"><button onclick="window.print()">列印／另存 PDF</button>　若 LINE 無法列印，請以 Safari／Chrome 開啟下載檔案。</div>
+    <h1>餘有榮焉｜${printType}出貨清單</h1>
+    <p class="subtitle">出貨狀態：${escapeHTML($('shippingFilter').selectedOptions[0].textContent)}　｜　本次列印 ${ds.length} 筆配送明細</p>
+    <div class="summary"><span>已接訂單 <b>${stats.ordered.toLocaleString('zh-TW')}</b> 盒</span><span>${isDelivery?'已出貨':'已交貨'} <b>${stats.shipped.toLocaleString('zh-TW')}</b> 盒</span><span>${isDelivery?'待出貨':'待交貨'} <b>${stats.pending.toLocaleString('zh-TW')}</b> 盒</span></div>
+    <table><colgroup><col style="width:9%"><col style="width:9%"><col style="width:5%"><col style="width:9%"><col style="width:10%">${isDelivery?'<col style="width:16%">':''}<col style="width:5%"><col style="width:8%"><col style="width:${isDelivery?'10':'16'}%"><col style="width:${isDelivery?'10':'16'}%"><col style="width:9%"></colgroup>
+    <thead><tr><th>訂單編號</th><th>訂購人</th><th>方式</th><th>收件人</th><th>收件電話</th>${isDelivery?'<th>配送地址</th>':''}<th>盒數</th><th>預計日期</th><th>客戶備註</th><th>配送備註</th><th>付款／出貨</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="${isDelivery?11:10}" style="text-align:center">目前條件沒有配送資料</td></tr>`}</tbody></table>
     </body></html>`;
-  // 不依賴 window.open 或自動下載：點擊後一定先顯示可見的預覽介面。
   let panel = document.getElementById('printPreviewPanel');
   if (!panel) {
     panel = document.createElement('div');
@@ -915,7 +936,7 @@ function printShippingList() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href=url;
-      a.download='餘有榮焉_出貨列印表_'+taiwanToday()+'.html';
+      a.download='餘有榮焉_'+printType+'出貨清單_'+taiwanToday()+'.html';
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),60000);
     } catch(e) { alert('下載失敗：'+e.message+'。請改用 Safari 或 Chrome 開啟後台。'); }
@@ -923,6 +944,7 @@ function printShippingList() {
 }
 
 function renderShipping() {
+  renderShippingSummary();
   const filter = $("shippingFilter").value;
   const typeFilter = $("shippingTypeFilter").value;
   const ds = allDeliveries().filter(d =>
