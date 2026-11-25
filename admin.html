@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>餘有榮焉｜訂單管理</title>
+<title>餘有榮焉｜訂單管理系統</title>
 <style>
 * { box-sizing: border-box; }
 body {
@@ -871,17 +871,30 @@ function printShippingList() {
   const ds = typeDs.filter(d => filter === 'all' || (filter === 'shipped' ? d.shipped : !d.shipped));
   const stats = shippingSummaryData(printType);
   const isDelivery = printType === '宅配';
+  // 大筆訂單以訂單編號彙總，避免同一訂單拆成多筆配送時漏算，
+  // 也避免不同訂購人剛好同名而被合併。
+  const largeOrdersMap = new Map();
+  typeDs.forEach(d => {
+    const id = String(d.order.id || '');
+    const current = largeOrdersMap.get(id) || { id, buyer: displayBuyer(d), qty: 0 };
+    current.qty += Number(d.qty) || 0;
+    largeOrdersMap.set(id, current);
+  });
+  const largeOrders = [...largeOrdersMap.values()]
+    .filter(o => o.qty >= 10)
+    .sort((a, b) => b.qty - a.qty || a.id.localeCompare(b.id));
+  const largeOrderRows = largeOrders.map(o => `<tr><td>${escapeHTML(o.buyer || '—')}</td><td>${escapeHTML(o.id)}</td><td class="large-qty">${o.qty.toLocaleString('zh-TW')} 盒</td></tr>`).join('');
+  const largeTotal = largeOrders.reduce((sum, o) => sum + o.qty, 0);
   const rows = ds.map(d => `<tr>
     <td class="id">${escapeHTML(d.order.id)}</td>
     <td class="important">${escapeHTML(displayBuyer(d))}</td>
     <td>${escapeHTML(d.type)}</td>
-    <td class="important">${escapeHTML(displayRecipient(d) || '—')}</td>
+    <td class="important">${escapeHTML(d.name || d.order.buyer || '—')}</td>
     <td>${escapeHTML(displayPhone(d) || '—')}</td>
     ${isDelivery ? `<td class="address">${escapeHTML(d.address || '—')}</td>` : ''}
     <td class="qty">${Number(d.qty) || 0}</td>
     <td>${escapeHTML(d.shipDate || '—')}</td>
     <td class="note">${escapeHTML(d.order.note || '—')}</td>
-    <td class="note">${escapeHTML(d.note || '—')}</td>
     <td>${d.paid ? '已收款' : '未收款'}<br>${d.shipped ? (isDelivery ? '已出貨' : '已交貨') : (isDelivery ? '待出貨' : '待交貨')}</td>
   </tr>`).join('');
   const html = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
@@ -889,7 +902,20 @@ function printShippingList() {
     <title>餘有榮焉－${printType}出貨清單</title><style>
     *{box-sizing:border-box}body{font-family:Arial,"PingFang TC","Microsoft JhengHei",sans-serif;color:#222;margin:0;padding:10px;background:#fff}
     h1{text-align:center;font-size:18pt;margin:4px 0 2px}.subtitle{text-align:center;font-size:11pt;margin:0 0 6px}
-    .summary{display:flex;justify-content:center;gap:22px;border:1px solid #999;padding:5px;margin-bottom:7px;font-size:12pt}.summary b{font-size:15pt}
+    .cover{min-height:180mm;display:flex;flex-direction:column;align-items:stretch;padding:7mm 12mm}
+    .cover h1{font-size:24pt;margin:10mm 0 3mm}
+    .cover .subtitle{font-size:13pt;margin-bottom:10mm}
+    .summary{display:flex;justify-content:space-between;gap:12px;margin:0 0 12mm}
+    .summary .stat{flex:1;border:2px solid #777;text-align:center;padding:12px 4px;font-size:14pt}
+    .summary .stat b{display:block;font-size:27pt;margin-top:6px}
+    .large-title{font-size:17pt;margin:0 0 6mm}
+    .large-orders{font-size:13pt;line-height:1.35;table-layout:auto}
+    .large-orders th,.large-orders td{padding:5px 8px}
+    .large-orders .large-qty{font-weight:bold;font-size:16pt;text-align:right}
+    .large-footer{font-size:12pt;margin-top:5mm}
+    .list-section{break-before:page;page-break-before:always}
+    .list-section h1{margin:0 0 2mm}
+    .list-section .subtitle{margin-bottom:4mm}
     table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11pt;line-height:1.15}
     th,td{border:1px solid #777;padding:2px 3px;vertical-align:middle;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap}
     th{font-size:10pt;background:#eee}td.important{font-size:14pt;font-weight:bold}td.qty{font-size:16pt;font-weight:bold;text-align:center}
@@ -900,13 +926,26 @@ function printShippingList() {
     @media print{body{padding:0}.toolbar{display:none}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style></head><body>
     <div class="toolbar"><button onclick="window.print()">列印／另存 PDF</button>　若 LINE 無法列印，請以 Safari／Chrome 開啟下載檔案。</div>
-    <h1>餘有榮焉｜${printType}出貨清單</h1>
-    <p class="subtitle">出貨狀態：${escapeHTML($('shippingFilter').selectedOptions[0].textContent)}　｜　本次列印 ${ds.length} 筆配送明細</p>
-    <div class="summary"><span>已接訂單 <b>${stats.ordered.toLocaleString('zh-TW')}</b> 盒</span><span>${isDelivery?'已出貨':'已交貨'} <b>${stats.shipped.toLocaleString('zh-TW')}</b> 盒</span><span>${isDelivery?'待出貨':'待交貨'} <b>${stats.pending.toLocaleString('zh-TW')}</b> 盒</span></div>
-    <table><colgroup><col style="width:9%"><col style="width:9%"><col style="width:5%"><col style="width:9%"><col style="width:10%">${isDelivery?'<col style="width:16%">':''}<col style="width:5%"><col style="width:8%"><col style="width:${isDelivery?'10':'16'}%"><col style="width:${isDelivery?'10':'16'}%"><col style="width:9%"></colgroup>
-    <thead><tr><th>訂單編號</th><th>訂購人</th><th>方式</th><th>收件人</th><th>收件電話</th>${isDelivery?'<th>配送地址</th>':''}<th>盒數</th><th>預計日期</th><th>客戶備註</th><th>配送備註</th><th>付款／出貨</th></tr></thead>
-    <tbody>${rows || `<tr><td colspan="${isDelivery?11:10}" style="text-align:center">目前條件沒有配送資料</td></tr>`}</tbody></table>
-    </body></html>`;
+    <section class="cover">
+      <h1>餘有榮焉｜${printType}出貨總表</h1>
+      <p class="subtitle">${escapeHTML(printType)}配送統計（全部狀態）｜清單自第 2 頁開始</p>
+      <div class="summary">
+        <div class="stat">已接訂單<b>${stats.ordered.toLocaleString('zh-TW')}</b>盒</div>
+        <div class="stat">${isDelivery?'已出貨':'已交貨'}<b>${stats.shipped.toLocaleString('zh-TW')}</b>盒</div>
+        <div class="stat">${isDelivery?'待出貨':'待交貨'}<b>${stats.pending.toLocaleString('zh-TW')}</b>盒</div>
+      </div>
+      <h2 class="large-title">10 盒以上大筆訂單（${largeOrders.length} 筆）</h2>
+      <table class="large-orders"><thead><tr><th>訂購人</th><th>訂單編號</th><th>訂購盒數</th></tr></thead>
+      <tbody>${largeOrderRows || '<tr><td colspan="3" style="text-align:center">目前沒有 10 盒以上訂單</td></tr>'}</tbody></table>
+      <p class="large-footer">大筆訂單合計：${largeTotal.toLocaleString('zh-TW')} 盒。以同一訂單在「${escapeHTML(printType)}」的配送盒數加總，按盒數由多至少排列。</p>
+    </section>
+    <section class="list-section">
+      <h1>餘有榮焉｜${printType}出貨清單</h1>
+      <p class="subtitle">出貨狀態：${escapeHTML($('shippingFilter').selectedOptions[0].textContent)}　｜　本次列印 ${ds.length} 筆配送明細</p>
+    <table><colgroup><col style="width:9%"><col style="width:10%"><col style="width:6%"><col style="width:11%"><col style="width:11%">${isDelivery?'<col style="width:17%">':''}<col style="width:6%"><col style="width:9%"><col style="width:${isDelivery?'12':'26'}%"><col style="width:9%"></colgroup>
+    <thead><tr><th>訂單編號</th><th>訂購人</th><th>方式</th><th>收件人</th><th>收件電話</th>${isDelivery?'<th>配送地址</th>':''}<th>盒數</th><th>預計日期</th><th>客戶備註</th><th>付款／出貨</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="${isDelivery?10:9}" style="text-align:center">目前條件沒有配送資料</td></tr>`}</tbody></table>
+    </section></body></html>`;
   let panel = document.getElementById('printPreviewPanel');
   if (!panel) {
     panel = document.createElement('div');
@@ -918,7 +957,7 @@ function printShippingList() {
       <button type="button" class="secondary" id="previewDownload">下載 HTML</button>
       <button type="button" class="secondary" id="previewClose">關閉</button>
       </div>
-      <p style="margin:6px 12px;font-size:12px;color:#666">若 LINE 無法叫出列印視窗，請按「下載 HTML」，用 Safari／Chrome 開啟後列印。含客戶個資，請妥善保管。</p>
+      <p style="margin:6px 12px;font-size:12px;color:#666">手機請按「列印／存 PDF」開啟獨立列印頁，再按頁面上方「列印／另存 PDF」。LINE 若阻擋新分頁，請用 Safari／Chrome 開啟後台，或下載 HTML 後列印。含客戶個資，請妥善保管。</p>
       <iframe title="出貨清單預覽" id="printPreviewFrame" style="width:100%;flex:1;border:0;background:white"></iframe>`;
     document.body.appendChild(panel);
     document.getElementById('previewClose').addEventListener('click', () => { panel.style.display='none'; });
@@ -927,8 +966,24 @@ function printShippingList() {
   const frame = document.getElementById('printPreviewFrame');
   frame.srcdoc = html;
   document.getElementById('previewPrint').onclick = () => {
-    try { frame.contentWindow.focus(); frame.contentWindow.print(); }
-    catch(e) { alert('此瀏覽器不支援直接列印，請按「下載 HTML」，改用 Safari 或 Chrome 開啟。'); }
+    // iOS Safari / LINE WebView 常會忽略 iframe.contentWindow.print()。
+    // 改由使用者點擊時同步開啟獨立列印頁，避免被視為非使用者觸發的彈窗。
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('手機瀏覽器阻擋了列印頁。請使用「下載 HTML」，以 Safari／Chrome 開啟檔案後選擇分享→列印；若在 LINE 內，請先用外部瀏覽器開啟後台。');
+      return;
+    }
+    try {
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      // 不自動呼叫 print()：手機瀏覽器對新分頁自動列印限制較多。
+      // 新分頁上方有「列印／另存 PDF」按鈕，讓使用者直接點擊。
+    } catch (e) {
+      try { printWindow.close(); } catch (_) {}
+      alert('無法開啟列印頁，請使用「下載 HTML」並改用 Safari／Chrome 開啟。');
+    }
   };
   document.getElementById('previewDownload').onclick = () => {
     try {
