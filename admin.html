@@ -920,7 +920,14 @@ function printShippingList() {
     th,td{border:1px solid #777;padding:2px 3px;vertical-align:middle;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap}
     th{font-size:10pt;background:#eee}td.important{font-size:14pt;font-weight:bold}td.qty{font-size:16pt;font-weight:bold;text-align:center}
     td.id{font-size:10pt}td.address,td.note{font-size:10.5pt}
-    tr{break-inside:avoid;page-break-inside:avoid}thead{display:table-header-group}
+    /* 換頁時整筆配送資料必須一起移到下一頁，不能把同筆的地址或備註切開。 */
+    .shipping-list tbody tr,.shipping-list tbody td{break-inside:avoid !important;page-break-inside:avoid !important}
+    .shipping-list thead{display:table-header-group}
+    .shipping-list tfoot{display:table-footer-group}
+    .shipping-list tr{break-inside:avoid !important;page-break-inside:avoid !important}
+    .shipping-list{break-inside:auto;page-break-inside:auto}
+    .large-orders tr{break-inside:avoid;page-break-inside:avoid}
+    thead{display:table-header-group}
     .toolbar{text-align:center;padding:8px;font-size:12pt}button{padding:10px 16px;border:0;border-radius:6px;background:#d97836;color:#fff}
     @page{size:A4 landscape;margin:7mm}
     @media print{body{padding:0}.toolbar{display:none}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -942,8 +949,8 @@ function printShippingList() {
     <section class="list-section">
       <h1>餘有榮焉｜${printType}出貨清單</h1>
       <p class="subtitle">出貨狀態：${escapeHTML($('shippingFilter').selectedOptions[0].textContent)}　｜　本次列印 ${ds.length} 筆配送明細</p>
-    <table><colgroup><col style="width:9%"><col style="width:10%"><col style="width:6%"><col style="width:11%"><col style="width:11%">${isDelivery?'<col style="width:17%">':''}<col style="width:6%"><col style="width:9%"><col style="width:${isDelivery?'12':'26'}%"><col style="width:9%"></colgroup>
-    <thead><tr><th>訂單編號</th><th>訂購人</th><th>方式</th><th>收件人</th><th>收件電話</th>${isDelivery?'<th>配送地址</th>':''}<th>盒數</th><th>預計日期</th><th>客戶備註</th><th>付款／出貨</th></tr></thead>
+    <table class="shipping-list"><colgroup><col style="width:9%"><col style="width:10%"><col style="width:6%"><col style="width:11%"><col style="width:11%">${isDelivery?'<col style="width:17%">':''}<col style="width:6%"><col style="width:9%"><col style="width:${isDelivery?'12':'26'}%"><col style="width:9%"></colgroup>
+    <thead><tr class="repeat-list-title"><th colspan="${isDelivery?10:9}" style="text-align:left;background:#fff;font-size:13pt;padding:4px">餘有榮焉｜${printType}出貨清單（續頁沿用完整欄位）</th></tr><tr><th>訂單編號</th><th>訂購人</th><th>方式</th><th>收件人</th><th>收件電話</th>${isDelivery?'<th>配送地址</th>':''}<th>盒數</th><th>預計日期</th><th>客戶備註</th><th>付款／出貨</th></tr></thead>
     <tbody>${rows || `<tr><td colspan="${isDelivery?10:9}" style="text-align:center">目前條件沒有配送資料</td></tr>`}</tbody></table>
     </section></body></html>`;
   let panel = document.getElementById('printPreviewPanel');
